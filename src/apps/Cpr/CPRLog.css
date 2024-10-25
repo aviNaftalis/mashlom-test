@@ -48,12 +48,20 @@
 .cpr-log-table .entry-content {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;  /* Changed from center to flex-start */
+  gap: 8px;  /* Added gap for spacing between text and buttons */
+}
+
+.cpr-log-table .entry-content span {
+  flex: 1;  /* Allow text to take available space */
+  text-align: right;  /* Ensure text is right-aligned */
+  min-width: 0;  /* Allow text to shrink if needed */
 }
 
 .cpr-log-table .entry-actions {
   display: flex;
   gap: 5px;
+  flex-shrink: 0;  /* Prevent buttons from shrinking */
 }
 
 .cpr-log-table .entry-actions button {

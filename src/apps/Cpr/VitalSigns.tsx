@@ -103,11 +103,11 @@ const VitalSigns: React.FC = () => {
     ].filter(entry => entry.value);
 
     return (
-      <div className="vital-signs-entry">
+      <div className="vital-signs-entry" key={signs.timestamp}>
         <p className="timestamp"><strong>{new Date(signs.timestamp).toLocaleTimeString('he-IL')}</strong></p>
         <div className="vital-signs-grid">
           {entries.map((entry, index) => (
-            <p key={index}>{entry.label}: {entry.value} {entry.unit}</p>
+            <p key={`${signs.timestamp}-${entry.label}`}>{entry.label}: {entry.value} {entry.unit}</p>
           ))}
         </div>
       </div>
@@ -186,7 +186,7 @@ const VitalSigns: React.FC = () => {
       {vitalSigns.length > 0 && <div className="vital-signs-history">
         <h4>היסטוריית מדדים</h4>
         {vitalSigns.map((signs) => renderVitalSignsHistory(signs))}
-       </div>}
+      </div>}
     </div>
   );
 };
