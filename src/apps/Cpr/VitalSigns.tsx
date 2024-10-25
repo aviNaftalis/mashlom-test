@@ -76,7 +76,7 @@ const VitalSigns: React.FC = () => {
 
     addEntry({
       timestamp: newVitalSigns.timestamp,
-      text: `מדדים חדשים: ${logEntries.join(', ')}`,
+      text: `בדיקת מדדים: ${logEntries.join(', ')}`,
       type: 'action',
       isImportant: false,
     });

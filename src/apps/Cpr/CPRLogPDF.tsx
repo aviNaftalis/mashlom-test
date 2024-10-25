@@ -109,6 +109,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     fontSize: 12,
     color: '#1D426E',
+    direction: 'rtl',
   },
   signatureLine: {
     marginTop: 50,
@@ -135,6 +136,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 14,
     color: '#1D426E',
+  },
+  textSegment: {
+    fontFamily: 'Noto',
+    color: '#1D426E',
   }
 });
 
@@ -159,6 +164,32 @@ const CPRLogPDFDocument: React.FC<CPRLogPDFProps> = ({ entries, hospital }) => {
     }).replace(',', '');
   };
 
+  const renderTextWithDirections = (text: string) => {
+    // Split text into segments, preserving spaces
+    const segments = text.split(/([a-zA-Z]+)/g);
+    
+    return (
+      <View style={{ flexDirection: 'row-reverse', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
+        {segments.map((segment, index) => {
+          const isEnglish = /^[a-zA-Z0-9]+$/.test(segment);
+          return (
+            <Text
+              key={index}
+              style={[
+                styles.textSegment,
+                {
+                  direction: isEnglish ? 'ltr' : 'rtl',
+                }
+              ]}
+            >
+              {segment}
+            </Text>
+          );
+        })}
+      </View>
+    );
+  };
+
   const hospitalLogoPath = `../../assets/${hospital}/logo.png`;
   const appLogoPath = '/apps/assets/logo/IconOnly_Transparent_NoBuffer.png';
 
@@ -173,7 +204,7 @@ const CPRLogPDFDocument: React.FC<CPRLogPDFProps> = ({ entries, hospital }) => {
               <Text style={styles.text}>{formatTime(entry.timestamp)}</Text>
             </View>
             <View style={styles.textCell}>
-              <Text style={styles.text}>{entry.text}</Text>
+              {renderTextWithDirections(entry.text)}
             </View>
           </View>
         ))}
@@ -227,7 +258,7 @@ const CPRLogPDFDocument: React.FC<CPRLogPDFProps> = ({ entries, hospital }) => {
   );
 };
 
-// Export Button Component remains the same
+// Export Button Component
 const ExportButton: React.FC<CPRLogPDFProps> = ({ entries, hospital }) => {
   const handleExport = async () => {
     const blob = await pdf(<CPRLogPDFDocument entries={entries} hospital={hospital} />).toBlob();
