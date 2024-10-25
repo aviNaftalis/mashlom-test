@@ -106,7 +106,7 @@ const VitalSigns: React.FC = () => {
       <div className="vital-signs-entry" key={signs.timestamp}>
         <p className="timestamp"><strong>{new Date(signs.timestamp).toLocaleTimeString('he-IL')}</strong></p>
         <div className="vital-signs-grid">
-          {entries.map((entry, index) => (
+          {entries.map((entry) => (
             <p key={`${signs.timestamp}-${entry.label}`}>{entry.label}: {entry.value} {entry.unit}</p>
           ))}
         </div>
