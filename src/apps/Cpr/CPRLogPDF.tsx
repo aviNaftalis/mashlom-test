@@ -165,13 +165,15 @@ const CPRLogPDFDocument: React.FC<CPRLogPDFProps> = ({ entries, hospital }) => {
   };
 
   const renderTextWithDirections = (text: string) => {
-    // Split text into segments, preserving spaces
-    const segments = text.split(/([a-zA-Z]+)/g);
+    // Split text into segments that might contain English letters, numbers, or other characters
+    const segments = text.split(/([a-zA-Z]+[/a-zA-Z0-9]*|[0-9/]+)/g);
     
     return (
       <View style={{ flexDirection: 'row-reverse', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
         {segments.map((segment, index) => {
-          const isEnglish = /^[a-zA-Z0-9]+$/.test(segment);
+          // Check if the segment contains any English letters
+          const isEnglish = /[a-zA-Z]/.test(segment);
+          console.log(segment, isEnglish);
           return (
             <Text
               key={index}
@@ -189,7 +191,6 @@ const CPRLogPDFDocument: React.FC<CPRLogPDFProps> = ({ entries, hospital }) => {
       </View>
     );
   };
-
   const hospitalLogoPath = `../../assets/${hospital}/logo.png`;
   const appLogoPath = '/apps/assets/logo/IconOnly_Transparent_NoBuffer.png';
 
