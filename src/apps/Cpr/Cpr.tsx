@@ -3,6 +3,7 @@ import { NotificationProvider } from './Notifications';
 import { CPRLogProvider, useCPRLog } from './CPRLog';
 import CprManager from './CprManager';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import CPRSettingsProvider from './CPRSettings';
 import { faFileLines, faHeartPulse, faSection, faListCheck, faLungs } from '@fortawesome/free-solid-svg-icons';
 import CPRLogComponent from './CPRLog';
 import VitalSigns from './VitalSigns';
@@ -171,18 +172,20 @@ const CprContent: React.FC = () => {
 
 const Cpr: React.FC = () => {
   return (
-    <NotificationProvider>
-      <CPRLogProvider>
-        <div>
-          <div className="container main-content">
-            <div className="group-container">
-              <h1>החייאה</h1>
-              <CprContent />
+    <CPRSettingsProvider>
+      <NotificationProvider>
+        <CPRLogProvider>
+          <div>
+            <div className="container main-content">
+              <div className="group-container">
+                <h1>החייאה</h1>
+                <CprContent />
+              </div>
             </div>
           </div>
-        </div>
-      </CPRLogProvider>
-    </NotificationProvider>
+        </CPRLogProvider>
+      </NotificationProvider>
+    </CPRSettingsProvider>
   );
 };
 
