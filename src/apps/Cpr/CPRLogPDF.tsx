@@ -180,6 +180,7 @@ const CPRLogPDFDocument: React.FC<CPRLogPDFProps> = ({ entries, hospital }) => {
               style={[
                 styles.textSegment,
                 {
+                  // @ts-ignore
                   direction: isEnglish ? 'ltr' : 'rtl',
                 }
               ]}
