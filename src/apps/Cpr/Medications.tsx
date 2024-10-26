@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { useResusContext } from '../Resus/ResusContext';
 import drugsDataFile from '../Resus/data/resus-drugs-definitions.json';
+import emergencyProtocols from '../Resus/data/emergency-protocols.json';
 import DrugComponent from '../Resus/Drug';
 import './Medications.css';
 
@@ -94,6 +95,14 @@ const Medications: React.FC = () => {
     drugsData.drugs.find(drug => drug.id === drugId)
   ).filter((drug): drug is Drug => drug !== undefined) : [];
 
+  // Get Protocol Name
+  const getProtocolName = (protocolId: string): string => {
+    const protocolData = emergencyProtocols.emergencyProtocols
+      .flatMap(section => section.protocols)
+      .find(p => p.id === protocolId);
+    return protocolData ? protocolData.name : '';
+  };
+
   return (
     <div id="medications-content">
       <div style={{ marginBottom: '2rem' }}>
@@ -102,7 +111,7 @@ const Medications: React.FC = () => {
 
       {protocol && protocolDrugs.length > 0 && (
         <div>
-          <MedicationsTable title="תרופות פרוטוקול" drugs={protocolDrugs} />
+          <MedicationsTable title={`תרופות ${getProtocolName(protocol)}`} drugs={protocolDrugs} />
         </div>
       )}
     </div>
