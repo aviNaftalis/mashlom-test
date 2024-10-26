@@ -56,7 +56,9 @@ const Drips: React.FC = () => {
         <div id="collapseable-area-drips" className="collapseable">
           <ul className="list-group">
             {dripsDefinitions.map((drip) => (
-              <DripComponent key={drip.id} drip={drip} />
+              <li className="list-group-item">
+                <DripComponent key={drip.id} drip={drip} />
+              </li>
             ))}
           </ul>
         </div>

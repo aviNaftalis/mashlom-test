@@ -87,7 +87,7 @@ const Drug: React.FC<DrugProps> = ({ drug }) => {
   };
 
   return (
-    <li className='list-group-item' style={{ display: 'flex', justifyContent: 'space-between', textAlign: 'left', color: 'var(--page-font-color)' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', textAlign: 'left', color: 'var(--page-font-color)' }}>
       <div>
         {!drug.type ? (
           <>
@@ -139,7 +139,7 @@ const Drug: React.FC<DrugProps> = ({ drug }) => {
         setIsOpen={setIsModalOpen}
         drug={drug}
       />
-    </li>
+      </div>
   );
 };
 

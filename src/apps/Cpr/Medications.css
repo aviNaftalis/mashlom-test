@@ -1,0 +1,64 @@
+.medications-table {
+  width: 100%;
+  border-collapse: collapse;
+  direction: rtl;
+  border: 1px solid #6585A0;
+}
+
+.medications-table thead {
+  background-color: #f8f9fa;
+}
+
+.medications-table th {
+  padding: 0.75rem;
+  font-weight: 600;
+  border: 1px solid #6585A0;
+}
+
+.medications-table td {
+  border: 1px solid #6585A0;
+}
+
+.medications-table .header-title {
+  text-align: right;
+  width: 90%;
+}
+
+.medications-table .header-action {
+  text-align: center;
+  width: 10%;
+}
+
+.medications-table .drug-cell {
+  padding: 0.5rem;
+  vertical-align: middle;
+  direction: ltr;
+}
+
+.medications-table .action-cell {
+  text-align: center;
+  vertical-align: middle;
+  width: 10%;
+}
+
+.give-med-button {
+  background: none;
+  border: none;
+  color: #1FB5A3;
+  cursor: pointer;
+  padding: 0.5rem;
+  font-size: 1.2rem;
+  transition: color 0.2s ease;
+}
+
+.give-med-button:hover {
+  color: #198754;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-center {
+  text-align: center;
+}

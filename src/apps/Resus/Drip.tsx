@@ -126,7 +126,7 @@ const Drip: React.FC<DripProps> = ({ drip }) => {
   };
 
   return (
-    <li className="list-group-item">
+    <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', textAlign: 'left', color: 'var(--page-font-color)' }}>
         <span>
           {drip.calc_type === 'DilutionInstructions' ? (
@@ -160,7 +160,7 @@ const Drip: React.FC<DripProps> = ({ drip }) => {
         drip={drip}
         weight={weight}
       />
-    </li>
+    </div>
   );
 };
 

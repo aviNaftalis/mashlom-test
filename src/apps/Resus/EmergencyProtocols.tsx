@@ -91,11 +91,17 @@ const EmergencyProtocols: React.FC = () => {
             <ul className="list-group" style={{direction:"ltr"}}>
               {protocolDrugs.map((drugId) => {
                 const drug = drugsDefinitions.drugs.find(d => d.id === drugId);
-                return drug ? <Drug key={drug.id} drug={drug} /> : null;
+                return drug ?
+                  <li className='list-group-item'>
+                    <Drug key={drug.id} drug={drug} /> 
+                  </li>: null;
               })}
               {protocolDrips.map((dripId) => {
                 const drip = drugsDefinitions.drips.find(d => d.id === dripId);
-                return drip ? <Drip key={drip.id} drip={drip} /> : null;
+                return drip ?                 
+                  <li className="list-group-item">
+                    <Drip key={drip.id} drip={drip} /> 
+                  </li> : null;
               })}
             </ul>
           </div>

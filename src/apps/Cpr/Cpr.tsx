@@ -4,12 +4,13 @@ import { CPRLogProvider, useCPRLog } from './CPRLog';
 import CprManager from './CprManager';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import CPRSettingsProvider from './CPRSettings';
-import { faFileLines, faHeartPulse, faSection, faListCheck, faLungs } from '@fortawesome/free-solid-svg-icons';
+import { faFileLines, faHeartPulse, faSection, faPills, faListCheck, faLungs } from '@fortawesome/free-solid-svg-icons';
 import CPRLogComponent from './CPRLog';
 import VitalSigns from './VitalSigns';
 import MedicalProcedures from './MedicalProcedures';
 import ABCDEFProcedures from './ABCDEFProcedures';
 import Airways from './Airways';
+import Medications from './Medications';
 import ReminderBox from './ReminderBox';
 import ResusInputs from '../Resus/ResusInputs';
 import emergencyProtocols from '../Resus/data/emergency-protocols.json';
@@ -34,6 +35,7 @@ interface EmergencyProtocols {
 const CprContent: React.FC = () => {
   const [logExpanded, setLogExpanded] = useState(false);
   const [vitalSignsExpanded, setVitalSignsExpanded] = useState(false);
+  const [medsExpanded, setMedsExpanded] = useState(false);
   const [proceduresExpanded, setProceduresExpanded] = useState(false);
   const [abcdefExpanded, setABCDEFExpanded] = useState(false);
   const [airwaysExpanded, setAirwaysExpanded] = useState(false);
@@ -42,6 +44,7 @@ const CprContent: React.FC = () => {
 
   const toggleLog = () => setLogExpanded(!logExpanded);
   const toggleVitalSigns = () => setVitalSignsExpanded(!vitalSignsExpanded);
+  const toggleMeds = () => setMedsExpanded(!medsExpanded);
   const toggleProcedures = () => setProceduresExpanded(!proceduresExpanded);
   const toggleAirways = () => setAirwaysExpanded(!airwaysExpanded);
   const toggleABCDEF = () => {
@@ -142,6 +145,16 @@ const CprContent: React.FC = () => {
         {proceduresExpanded && (
           <div id="collapseable-area-procedures" className={`collapseable ${proceduresExpanded ? 'expanded' : ''}`}>
             <MedicalProcedures />
+          </div>
+        )}
+
+        <h4 className="section-header" onClick={toggleMeds}>
+          <span className="toggle-icon">{medsExpanded ? '-' : '+'}</span>
+          <span className="section-name"><FontAwesomeIcon icon={faPills} /> תרופות </span>
+        </h4>
+        {medsExpanded && (
+          <div id="collapseable-area-meds" className={`collapseable ${medsExpanded ? 'expanded' : ''}`}>
+            <Medications />
           </div>
         )}
 

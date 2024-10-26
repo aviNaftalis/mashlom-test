@@ -81,10 +81,12 @@ const Drugs: React.FC = () => {
                 const drug = drugsData.drugs.find(d => d.id === drugId);
                 if (!drug) return null;
                 return (
-                  <DrugComponent 
-                    key={drugIndex} 
-                    drug={drug} 
-                  />
+                  <li className='list-group-item'>
+                    <DrugComponent 
+                      key={drugIndex} 
+                      drug={drug} 
+                    />
+                  </li>
                 );
               })}              
               </ul>
