@@ -1,3 +1,7 @@
+.medications-container {
+  margin-bottom: 15px;
+}
+
 .medications-table {
   width: 100%;
   border-collapse: collapse;
@@ -52,6 +56,17 @@
 }
 
 .give-med-button:hover {
+  color: #198754;
+}
+
+.give-med-button .icon {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  width: 2rem;
+  height: 2rem;
+}
+
+.give-med-button .icon.checked {
+  transform: scale(1.2);
   color: #198754;
 }
 

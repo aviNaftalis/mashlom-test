@@ -111,6 +111,14 @@ const styles = StyleSheet.create({
     color: '#1D426E',
     direction: 'rtl',
   },
+  medicationTextCell: {
+    width: '80%',
+    padding: 5,
+    textAlign: 'right',
+    fontSize: 12,
+    color: '#1D426E',
+    direction: 'ltr',
+  },
   signatureLine: {
     marginTop: 50,
     borderTopWidth: 1,
@@ -140,6 +148,11 @@ const styles = StyleSheet.create({
   textSegment: {
     fontFamily: 'Noto',
     color: '#1D426E',
+  },
+  medicationTextContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
   }
 });
 
@@ -164,16 +177,25 @@ const CPRLogPDFDocument: React.FC<CPRLogPDFProps> = ({ entries, hospital }) => {
     }).replace(',', '');
   };
 
-  const renderTextWithDirections = (text: string) => {
-    // Split text into segments that might contain English letters, numbers, or other characters
+  const renderTextWithDirections = (text: string, type: LogEntry['type']) => {
+    // For medications, always use LTR
+    if (type === 'medication') {
+      return (
+        <View style={styles.medicationTextContainer}>
+          <Text style={styles.textSegment}>
+            {text}
+          </Text>
+        </View>
+      );
+    }
+
+    // For other types, use the original logic
     const segments = text.split(/([a-zA-Z]+[/a-zA-Z0-9]*|[0-9/]+)/g);
     
     return (
       <View style={{ flexDirection: 'row-reverse', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
         {segments.map((segment, index) => {
-          // Check if the segment contains any English letters
           const isEnglish = /[a-zA-Z]/.test(segment);
-          console.log(segment, isEnglish);
           return (
             <Text
               key={index}
@@ -205,8 +227,8 @@ const CPRLogPDFDocument: React.FC<CPRLogPDFProps> = ({ entries, hospital }) => {
             <View style={styles.timeCell}>
               <Text style={styles.text}>{formatTime(entry.timestamp)}</Text>
             </View>
-            <View style={styles.textCell}>
-              {renderTextWithDirections(entry.text)}
+            <View style={type === 'medication' ? styles.medicationTextCell : styles.textCell}>
+              {renderTextWithDirections(entry.text, type)}
             </View>
           </View>
         ))}

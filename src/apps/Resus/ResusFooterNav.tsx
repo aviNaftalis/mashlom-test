@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faDatabase, faFileInvoice, faHeartPulse } from '@fortawesome/free-solid-svg-icons';
+import { faPills, faFileInvoice, faHeartPulse } from '@fortawesome/free-solid-svg-icons';
 import './ResusFooterNav.css'
 
 interface FooterNavProps {
@@ -39,7 +39,7 @@ const FooterNav: React.FC<FooterNavProps> = ({ hospital }) => {
             <div className="bottom-menu-color">
               <FontAwesomeIcon 
                 icon={
-                  panel === 'meds' ? faDatabase :
+                  panel === 'meds' ? faPills :
                   panel === 'protocols' ? faFileInvoice :
                   faHeartPulse
                 } 

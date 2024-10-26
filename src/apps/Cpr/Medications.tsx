@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 import { useResusContext } from '../Resus/ResusContext';
 import drugsDataFile from '../Resus/data/resus-drugs-definitions.json';
 import emergencyProtocols from '../Resus/data/emergency-protocols.json';
 import DrugComponent from '../Resus/Drug';
+import { useCPRLog } from './CPRLog';
 import './Medications.css';
 
 interface Drug {
@@ -32,22 +33,113 @@ interface Section {
   drugs: string[];
 }
 
+interface ProtocolConfig {
+  protocolId: string;
+  drugs: string[];
+  drips?: string[];
+  defi?: Array<{
+    name: string;
+    joulePerKg: number;
+  }>;
+}
+
 interface MedicationGuide {
   drugs: Drug[];
   sections: Section[];
-  protocols: {
-    protocolId: string;
-    drugs: string[];
-    drips: string[];
-  }[];
+  protocols: ProtocolConfig[];
+}
+
+interface EmergencyProtocol {
+  name: string;
+  id: string;
+  algorithmFile?: string;
+  protocolFile?: string;
+}
+
+interface ProtocolSection {
+  section: string;
+  protocols: EmergencyProtocol[];
+}
+
+interface EmergencyProtocolsData {
+  emergencyProtocols: ProtocolSection[];
 }
 
 const MedicationsTable: React.FC<{
   title: string;
   drugs: Drug[];
 }> = ({ title, drugs }) => {
+  const [givenDrugs, setGivenDrugs] = useState<Record<string, boolean>>({});
+  const { addEntry } = useCPRLog();
+  const { weight } = useResusContext();
+
+  // Drug calculation functions from Drug.tsx
+  const formatNumber = (num: number) => {
+    let formatted = num.toFixed(2);
+    formatted = formatted.replace(/\.?0+$/, '');
+    return formatted;
+  };
+
+  const splitRatio = (ratio: string) => {
+    return ratio.split('/').map(Number);
+  };
+
+  const getAdministrationUnit = (drugDefinition: Drug) => {
+    if (drugDefinition.type === 'mass') {
+      return drugDefinition.dose_unit;
+    } else {
+      return 'ml';
+    }
+  };
+
+  const getDoseByWeightWithMaxLimit = (drugDefinition: Drug) => {
+    if (weight === null) return 0;
+    let doseByWeight = drugDefinition.dose_per_kg * weight;
+    if (drugDefinition.maxDose) {
+      doseByWeight = Math.min(Number(drugDefinition.maxDose), doseByWeight);
+    }
+    if (drugDefinition.minDose) {
+      doseByWeight = Math.max(Number(drugDefinition.minDose), doseByWeight);
+    }
+    return doseByWeight;
+  };
+
+  const getDoseByWeightWithMaxLimitFormatted = (drugDefinition: Drug) => {
+    return formatNumber(getDoseByWeightWithMaxLimit(drugDefinition));
+  };
+
+  const calcAmountToAdminister = (drugDefinition: Drug) => {
+    let amount;
+    if (drugDefinition.type === 'fluid' || drugDefinition.type === 'mass') {
+      amount = getDoseByWeightWithMaxLimit(drugDefinition);
+    } else {
+      amount = calcVolume(drugDefinition);
+    }
+    return formatNumber(amount);
+  };
+
+  const calcVolume = (drugDefinition: Drug) => {
+    const doseByWeight = getDoseByWeightWithMaxLimit(drugDefinition);
+    const [numerator, denominator] = splitRatio(drugDefinition.concentration);
+    const concentration = numerator / denominator;
+    return doseByWeight / concentration;
+  };
+
   const handleGiveMedication = (drug: Drug) => {
-    console.log(`Giving medication: ${drug.name}`);
+    setGivenDrugs(prev => ({
+      ...prev,
+      [drug.id]: !prev[drug.id]
+    }));
+
+    if (!givenDrugs[drug.id]) {
+      const text = `${drug.name}: ${getDoseByWeightWithMaxLimitFormatted(drug)} ${drug.dose_unit}, ${calcAmountToAdminister(drug)} ${getAdministrationUnit(drug)}`;
+      addEntry({
+        timestamp: new Date().toISOString(),
+        text,
+        type: 'medication',
+        isImportant: false
+      });
+    }
   };
 
   return (
@@ -69,7 +161,10 @@ const MedicationsTable: React.FC<{
                 className="give-med-button"
                 onClick={() => handleGiveMedication(drug)}
               >
-                <FontAwesomeIcon icon={faPlus} />
+                <FontAwesomeIcon 
+                  icon={givenDrugs[drug.id] ? faCircleCheck : faPlus} 
+                  className={`icon ${givenDrugs[drug.id] ? 'checked' : ''}`}
+                />
               </button>
             </td>
           </tr>
@@ -81,7 +176,8 @@ const MedicationsTable: React.FC<{
 
 const Medications: React.FC = () => {
   const { protocol } = useResusContext();
-  const drugsData: MedicationGuide = drugsDataFile;
+  const drugsData = drugsDataFile as MedicationGuide;
+  const protocols = emergencyProtocols as EmergencyProtocolsData;
 
   // Get Resus Drugs
   const resusSection = drugsData.sections.find(section => section.name === "Resus Drugs");
@@ -97,14 +193,14 @@ const Medications: React.FC = () => {
 
   // Get Protocol Name
   const getProtocolName = (protocolId: string): string => {
-    const protocolData = emergencyProtocols.emergencyProtocols
+    const protocolData = protocols.emergencyProtocols
       .flatMap(section => section.protocols)
       .find(p => p.id === protocolId);
-    return protocolData ? protocolData.name : '';
+    return protocolData?.name || '';
   };
 
   return (
-    <div id="medications-content">
+    <div id="medications-content" className="medications-container">
       <div style={{ marginBottom: '2rem' }}>
         <MedicationsTable title="תרופות החייאה" drugs={resusDrugs} />
       </div>
