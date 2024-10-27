@@ -412,6 +412,36 @@
       "maxDoseUnit": "mg",
       "concentration": "1/1",
       "dose_range": "mg/kg(15-20)"
+    },
+    {
+      "id": "Hydralazine_IV_0.2_mg",
+      "name": "Hydralazine",
+      "howToGive": "IV",
+      "dose_per_kg": 0.2,
+      "dose_unit": "mg",
+      "maxDose": "10",
+      "maxDoseUnit": "mg",
+      "concentration": "20/1"
+    },
+    {
+      "id": "Labetalol_IV_0.2_mg",
+      "name": "Labetalol",
+      "howToGive": "IV",
+      "dose_per_kg": 0.2,
+      "dose_unit": "mg",
+      "maxDose": "10",
+      "maxDoseUnit": "mg",
+      "concentration": "5/1"
+    },
+    {
+      "id": "Nifedipine_PO_0.1_mg",
+      "name": "Nifedipine",
+      "howToGive": "PO",
+      "dose_per_kg": 0.1,
+      "dose_unit": "mg",
+      "maxDose": "10",
+      "maxDoseUnit": "mg",
+      "concentration": "1/1"
     }
   ],
   "drips": [
@@ -706,6 +736,14 @@
         "Valproicacid_IV_40_mg",
         "Phenobarbital_IV_20_mg"
     ]
+    },
+    {
+      "protocolId":"hypertension",
+      "drugs":[
+        "Hydralazine_IV_0.2_mg",
+        "Labetalol_IV_0.2_mg",
+        "Nifedipine_PO_0.1_mg"
+      ]
     }
   ]
 }
