@@ -620,6 +620,30 @@
         "Noradrenline_DilutionInstructions_0.1_per_minute",
         "Dopamine_DilutionInstructions_5_per_minute"
       ]
+    },
+    {
+      "protocolId": "drowning",
+      "drugs": [
+        "Dextrose10%_IV_0.2_gr",
+        "Dextrose25%_IV_0.2_gr",
+        "Phenytoin_IV_20_mg",
+        "Keppra_IV_40_mg"
+      ]
+    },
+    {
+      "protocolId": "fever-and-neutropenia",
+      "drugs": ["FluidBolusNACL0.9%_IV_20_ml"],
+      "drips":["Adrenaline_DilutionInstructions_0.1_per_minute"]
+    },
+    {
+      "protocolId": "status-epilepticus",
+      "drugs":[
+        "Midazolam_INTRANASAL_0.5_mg",
+        "Keppra_IV_40_mg",
+        "Phenytoin_IV_20_mg",
+        "Valproicacid_IV_40_mg",
+        "Phenobarbital_IV_20_mg"
+    ]
     }
   ]
 }
