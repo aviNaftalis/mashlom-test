@@ -3,16 +3,16 @@ import React, { createContext, useContext, useState } from 'react';
 export interface CPRSettings {
   massagerAlertEnabled: boolean;
   adrenalineAlertEnabled: boolean;
-  massagerAlertTime: string; // mm:ss format
-  adrenalineAlertTime: string; // mm:ss format
+  massagerAlertSeconds: number;
+  adrenalineAlertSeconds: number;
   timerDisplay: 'none' | 'massager' | 'adrenaline';
 }
 
 const defaultSettings: CPRSettings = {
   massagerAlertEnabled: true,
   adrenalineAlertEnabled: true,
-  massagerAlertTime: '02:00',
-  adrenalineAlertTime: '03:00',
+  massagerAlertSeconds: 120, // 2:00 minutes
+  adrenalineAlertSeconds: 180, // 3:00 minutes
   timerDisplay: 'massager'
 };
 
