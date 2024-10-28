@@ -358,6 +358,90 @@
       "concentration": "50/250",
       "maxDose": "100",
       "maxDoseUnit": "gr"
+    },
+    {
+      "id": "FUSID_IV_0.5_mg",
+      "name": "FUSID",
+      "howToGive": "IV",
+      "dose_per_kg": 0.5,
+      "dose_unit": "mg",
+      "dose_range": "mg/kg(0.5-1)",
+      "concentration": "1/1"
+    },
+    {
+      "id": "Tazocin_IV_110_mg",
+      "name": "Tazocin",
+      "howToGive": "IV",
+      "dose_per_kg": 110,
+      "dose_unit": "mg",
+      "maxDose": "4500",
+      "maxDoseUnit": "mg",
+      "concentration": "1/1",
+      "comment": "up to 4 doses per day"
+    },
+    {
+      "id": "Amikacin_IV_15_mg",
+      "name": "Amikacin",
+      "howToGive": "IV",
+      "dose_per_kg": 15,
+      "dose_unit": "mg",
+      "maxDose": "1500",
+      "maxDoseUnit": "mg",
+      "dose_range": "mg/kg(15-20)",
+      "concentration": "1/1",
+      "comment": "up to 1 dose per day"
+    },
+    {
+      "id": "Meropenem_IV_40_mg",
+      "name": "Meropenem",
+      "howToGive": "IV",
+      "dose_per_kg": 40,
+      "dose_unit": "mg",
+      "maxDose": "2000",
+      "maxDoseUnit": "mg",
+      "concentration": "1/1",
+      "comment": "up to 3 doses per day"
+    },
+    {
+      "id": "Vancomycin_IV_15_mg",
+      "name": "Vancomycin",
+      "howToGive": "IV",
+      "dose_per_kg": 15,
+      "dose_unit": "mg",
+      "maxDose": "500",
+      "maxDoseUnit": "mg",
+      "concentration": "1/1",
+      "dose_range": "mg/kg(15-20)"
+    },
+    {
+      "id": "Hydralazine_IV_0.2_mg",
+      "name": "Hydralazine",
+      "howToGive": "IV",
+      "dose_per_kg": 0.2,
+      "dose_unit": "mg",
+      "maxDose": "10",
+      "maxDoseUnit": "mg",
+      "concentration": "20/1"
+    },
+    {
+      "id": "Labetalol_IV_0.2_mg",
+      "name": "Labetalol",
+      "howToGive": "IV",
+      "dose_per_kg": 0.2,
+      "dose_unit": "mg",
+      "maxDose": "10",
+      "maxDoseUnit": "mg",
+      "concentration": "5/1"
+    },
+    {
+      "id": "Nifedipine_PO_0.1_mg",
+      "name": "Nifedipine",
+      "howToGive": "PO",
+      "dose_per_kg": 0.1,
+      "dose_unit": "mg",
+      "maxDose": "10",
+      "maxDoseUnit": "mg",
+      "concentration": "1/1"
     }
   ],
   "drips": [
@@ -619,6 +703,46 @@
         "Adrenaline_DilutionInstructions_0.1_per_minute",
         "Noradrenline_DilutionInstructions_0.1_per_minute",
         "Dopamine_DilutionInstructions_5_per_minute"
+      ]
+    },
+    {
+      "protocolId": "drowning",
+      "drugs": [
+        "Dextrose10%_IV_0.2_gr",
+        "Dextrose25%_IV_0.2_gr",
+        "Phenytoin_IV_20_mg",
+        "Keppra_IV_40_mg",
+        "FUSID_IV_0.5_mg",
+        "FluidBolusNACL0.9%_IV_20_ml"
+      ]
+    },
+    {
+      "protocolId": "fever-and-neutropenia",
+      "drugs": [
+        "FluidBolusNACL0.9%_IV_20_ml",
+        "Tazocin_IV_110_mg",
+        "Amikacin_IV_15_mg",
+        "Meropenem_IV_40_mg",
+        "Vancomycin_IV_15_mg"
+      ],
+      "drips":["Adrenaline_DilutionInstructions_0.1_per_minute"]
+    },
+    {
+      "protocolId": "status-epilepticus",
+      "drugs":[
+        "Midazolam_INTRANASAL_0.5_mg",
+        "Keppra_IV_40_mg",
+        "Phenytoin_IV_20_mg",
+        "Valproicacid_IV_40_mg",
+        "Phenobarbital_IV_20_mg"
+    ]
+    },
+    {
+      "protocolId":"hypertension",
+      "drugs":[
+        "Hydralazine_IV_0.2_mg",
+        "Labetalol_IV_0.2_mg",
+        "Nifedipine_PO_0.1_mg"
       ]
     }
   ]
