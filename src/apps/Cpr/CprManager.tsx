@@ -6,6 +6,8 @@ import { useNotification } from './Notifications';
 import { useCPRLog } from './CPRLog';
 import Modal, { ModalDirectionOptions } from '../../components/Modal';
 import SettingsModal from './SettingsModal';
+import { useCPRSettings } from './CPRSettings';
+import './CprManager.css';
 
 // Define the context interface
 interface CPRCountersContextType {
@@ -35,20 +37,32 @@ interface CprManagerProps {
 const CprManager: React.FC<CprManagerProps> = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [countdownTime, setCountdownTime] = useState(20);
+  const [massagerTime, setMassagerTime] = useState(0);
+  const [adrenalineTime, setAdrenalineTime] = useState(0);
   const [isSoundOn, setIsSoundOn] = useState(true);
   const [showDeathModal, setShowDeathModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [deathTime, setDeathTime] = useState('');
   const [adrenalineCount, setAdrenalineCount] = useState(0);
   const [shockCount, setShockCount] = useState(0);
-  const notificationShownRef = useRef(false);
+  const massagerNotificationShownRef = useRef(false);
+  const adrenalineNotificationShownRef = useRef(false);
   const { showNotification } = useNotification();
   const { addEntry } = useCPRLog();
+  const { settings } = useCPRSettings();
 
-  const showTimerNotification = useCallback(() => {
-    if (!notificationShownRef.current) {
-      notificationShownRef.current = true;
+  const resetTimers = useCallback(() => {
+    if (settings.massagerAlertEnabled) {
+      setMassagerTime(settings.massagerAlertSeconds);
+    }
+    if (settings.adrenalineAlertEnabled) {
+      setAdrenalineTime(settings.adrenalineAlertSeconds);
+    }
+  }, [settings]);
+
+  const showMassagerNotification = useCallback(() => {
+    if (!massagerNotificationShownRef.current) {
+      massagerNotificationShownRef.current = true;
       showNotification({
         icon: faRepeat,
         text: "החלף מעסים ובדוק דופק",
@@ -56,40 +70,79 @@ const CprManager: React.FC<CprManagerProps> = () => {
           { 
             text: "בוצע", 
             onClick: () => {
-              setCountdownTime(20);
-              notificationShownRef.current = false;
-              addEntry({
-                timestamp: new Date().toISOString(),
-                text: "הוחלפו המעסים",
-                type: 'action',
-                isImportant: false
-              });
+              setMassagerTime(settings.massagerAlertSeconds);
+              massagerNotificationShownRef.current = false;
             }
           }
         ],
       });
     }
-  }, [showNotification, addEntry]);
+  }, [showNotification, settings.massagerAlertSeconds]);
+
+  const showAdrenalineNotification = useCallback(() => {
+    if (!adrenalineNotificationShownRef.current) {
+      adrenalineNotificationShownRef.current = true;
+      showNotification({
+        icon: faSyringe,
+        text: "נא לשקול מתן אדרנלין",
+        buttons: [
+          {
+            text: "ניתן",
+            onClick: () => {
+              setAdrenalineCount(prev => prev + 1);
+              setAdrenalineTime(settings.adrenalineAlertSeconds);
+              adrenalineNotificationShownRef.current = false;
+              addEntry({
+                timestamp: new Date().toISOString(),
+                text: `ניתן אדרנלין מספר ${adrenalineCount + 1}`,
+                type: 'medication',
+                isImportant: true
+              });
+            }
+          },
+          {
+            text: "אין צורך",
+            onClick: () => {
+              setAdrenalineTime(settings.adrenalineAlertSeconds);
+              adrenalineNotificationShownRef.current = false;
+            }
+          }
+        ],
+      });
+    }
+  }, [showNotification, settings.adrenalineAlertSeconds, adrenalineCount, addEntry]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isRunning) {
       interval = setInterval(() => {
-        setElapsedTime((prevTime) => prevTime + 1);
-        setCountdownTime((prevTime) => {
-          if (prevTime > 0) {
-            return prevTime - 1;
-          } else {
-            showTimerNotification();
-            return 0;
-          }
-        });
+        setElapsedTime(prevTime => prevTime + 1);
+        
+        if (settings.massagerAlertEnabled) {
+          setMassagerTime(prevTime => {
+            if (prevTime > 0) {
+              return prevTime - 1;
+            } else {
+              showMassagerNotification();
+              return 0;
+            }
+          });
+        }
+
+        if (settings.adrenalineAlertEnabled) {
+          setAdrenalineTime(prevTime => {
+            if (prevTime > 0) {
+              return prevTime - 1;
+            } else {
+              showAdrenalineNotification();
+              return 0;
+            }
+          });
+        }
       }, 1000);
     }
-    return () => {
-      clearInterval(interval);
-    };
-  }, [isRunning, showTimerNotification]);
+    return () => clearInterval(interval);
+  }, [isRunning, settings, showMassagerNotification, showAdrenalineNotification]);
 
   const formatTime = (time: number): string => {
     const hours = Math.floor(time / 3600);
@@ -98,6 +151,15 @@ const CprManager: React.FC<CprManagerProps> = () => {
     return [hours, minutes, seconds]
       .map(v => v < 10 ? "0" + v : v)
       .join(":");
+  };
+
+  const getDisplayTimer = (): number => {
+    if (settings.timerDisplay === 'massager' && settings.massagerAlertEnabled) {
+      return massagerTime;
+    } else if (settings.timerDisplay === 'adrenaline' && settings.adrenalineAlertEnabled) {
+      return adrenalineTime;
+    }
+    return 0;
   };
 
   const handleAdrenaline = useCallback(() => {
@@ -128,7 +190,9 @@ const CprManager: React.FC<CprManagerProps> = () => {
     setIsRunning(true);
     setAdrenalineCount(0);
     setShockCount(0);
-    notificationShownRef.current = false;
+    massagerNotificationShownRef.current = false;
+    adrenalineNotificationShownRef.current = false;
+    resetTimers();
     addEntry({
       timestamp: new Date().toISOString(),
       text: "החייאה התחילה",
@@ -139,7 +203,8 @@ const CprManager: React.FC<CprManagerProps> = () => {
   
   const endCpr = (reason: 'ROSC' | 'DEATH') => {
     setIsRunning(false);
-    notificationShownRef.current = false;
+    massagerNotificationShownRef.current = false;
+    adrenalineNotificationShownRef.current = false;
     if (reason === 'ROSC') {
       addEntry({
         timestamp: new Date().toISOString(),
@@ -155,7 +220,6 @@ const CprManager: React.FC<CprManagerProps> = () => {
         isImportant: true
       });
     }
-    console.log(`CPR ended: ${reason}`);
   };
 
   const handleDeathButtonClick = () => {
@@ -166,7 +230,8 @@ const CprManager: React.FC<CprManagerProps> = () => {
 
   const handleConfirmDeath = () => {
     setIsRunning(false);
-    notificationShownRef.current = false;
+    massagerNotificationShownRef.current = false;
+    adrenalineNotificationShownRef.current = false;
     addEntry({
       timestamp: new Date().toISOString(),
       text: "נקבע מות המטופל",
@@ -192,52 +257,28 @@ const CprManager: React.FC<CprManagerProps> = () => {
 
   return (
     <CPRCountersContext.Provider value={countersContextValue}>
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        direction: 'rtl',
-        border: '1px solid #ccc',
-        borderRadius: '5px',
-        padding: '15px',
-        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-      }}>
+      <div className="cpr-manager-container">
         {/* Right: Clocks, Timers, and Counters */}
-        <div style={{ padding: 'auto' }}>
-          <div style={{ fontSize: '24px', marginBottom: '10px' }}>
-            {formatTime(elapsedTime)}
-          </div>
-          <div style={{ fontSize: '20px', color: countdownTime === 0 ? 'red' : 'inherit', marginBottom: '15px' }}>
-            {formatTime(countdownTime)}
-          </div>
+        <div className="timer-section">
+          <div className="elapsed-time">{formatTime(elapsedTime)}</div>
+          {settings.timerDisplay !== 'none' && (
+            <div className={`countdown-time ${getDisplayTimer() === 0 ? 'zero' : ''}`}>
+              {formatTime(getDisplayTimer())}
+            </div>
+          )}
           
           {/* Counter Section */}
-          <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: '10px',
-            borderTop: '1px solid #ccc',
-            paddingTop: '10px'
-          }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '10px', 
-              cursor: isRunning ? 'pointer' : 'default',
-              opacity: isRunning ? 1 : 0.5 
-            }} 
+          <div className="counter-section">
+            <div 
+              className={`counter-item ${isRunning ? 'active' : ''}`}
               onClick={handleAdrenaline}
             >
               <FontAwesomeIcon icon={faSyringe} />
               <span>אדרנלין: {adrenalineCount}</span>
             </div>
             
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '10px',
-              cursor: isRunning ? 'pointer' : 'default',
-              opacity: isRunning ? 1 : 0.5 
-            }} 
+            <div 
+              className={`counter-item ${isRunning ? 'active' : ''}`}
               onClick={handleShock}
             >
               <FontAwesomeIcon icon={faBoltLightning} />
@@ -247,52 +288,17 @@ const CprManager: React.FC<CprManagerProps> = () => {
         </div>
 
         {/* Center: Actions */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="actions-section">
           {!isRunning ? (
-            <button
-              onClick={startCpr}
-              style={{
-                width: '120px',
-                height: '120px',
-                borderRadius: '50%',
-                backgroundColor: '#1FB5A3',
-                color: 'white',
-                border: 'none',
-                fontSize: '24px',
-                cursor: 'pointer',
-              }}
-            >
+            <button className="start-button" onClick={startCpr}>
               התחל
             </button>
           ) : (
             <>
-              <button
-                onClick={() => endCpr('ROSC')}
-                style={{
-                  width: '120px',
-                  height: '60px',
-                  backgroundColor: '#1FB5A3',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  marginBottom: '10px',
-                  cursor: 'pointer',
-                }}
-              >
+              <button className="rosc-button" onClick={() => endCpr('ROSC')}>
                 ROSC
               </button>
-              <button
-                onClick={handleDeathButtonClick}
-                style={{
-                  width: '120px',
-                  height: '60px',
-                  backgroundColor: '#1FB5A3',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  cursor: 'pointer',
-                }}
-              >
+              <button className="death-button" onClick={handleDeathButtonClick}>
                 DEATH
               </button>
             </>
@@ -300,14 +306,8 @@ const CprManager: React.FC<CprManagerProps> = () => {
         </div>
 
         {/* Left: Settings */}
-        <div style={{ 
-          padding: '20px', 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'flex-start',
-          gap: '15px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div className="settings-section">
+          <div className="sound-toggle">
             <label className="switch">
               <input
                 type="checkbox"
@@ -316,25 +316,10 @@ const CprManager: React.FC<CprManagerProps> = () => {
               />
               <span className="slider round"></span>
             </label>
-            <FontAwesomeIcon icon={faVolumeLow} style={{ marginRight: '10px' }} />
+            <FontAwesomeIcon icon={faVolumeLow} className="volume-icon" />
           </div>
 
-          {/* Settings button */}
-          <button
-            onClick={() => setShowSettingsModal(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 16px',
-              backgroundColor: '#1FB5A3',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
+          <button className="settings-button" onClick={() => setShowSettingsModal(true)}>
             <FontAwesomeIcon icon={faGear} />
             הגדרות
           </button>
@@ -366,59 +351,6 @@ const CprManager: React.FC<CprManagerProps> = () => {
           isOpen={showSettingsModal}
           onClose={() => setShowSettingsModal(false)}
         />
-
-        <style>{`
-          .switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 34px;
-          }
-
-          .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-          }
-
-          .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #B9EDE7;
-            transition: .4s;
-          }
-
-          .slider:before {
-            position: absolute;
-            content: "";
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-          }
-
-          input:checked + .slider {
-            background-color: #1FB5A3;
-          }
-
-          input:checked + .slider:before {
-            transform: translateX(26px);
-          }
-
-          .slider.round {
-            border-radius: 34px;
-          }
-
-          .slider.round:before {
-            border-radius: 50%;
-          }
-        `}</style>
       </div>
     </CPRCountersContext.Provider>
   );

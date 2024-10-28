@@ -1,0 +1,173 @@
+.cpr-manager-container {
+    display: flex;
+    justify-content: space-between;
+    direction: rtl;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Timer Section */
+  .timer-section {
+    padding: auto;
+  }
+  
+  .elapsed-time {
+    font-size: 24px;
+    margin-bottom: 10px;
+  }
+  
+  .countdown-time {
+    font-size: 20px;
+    margin-bottom: 15px;
+  }
+  
+  .countdown-time.zero {
+    color: red;
+  }
+  
+  /* Counter Section */
+  .counter-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-top: 1px solid #ccc;
+    padding-top: 10px;
+  }
+  
+  .counter-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0.5;
+    cursor: default;
+  }
+  
+  .counter-item.active {
+    opacity: 1;
+    cursor: pointer;
+  }
+  
+  /* Actions Section */
+  .actions-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .start-button {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background-color: #1FB5A3;
+    color: white;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+  }
+  
+  .rosc-button {
+    width: 120px;
+    height: 60px;
+    background-color: #1FB5A3;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    cursor: pointer;
+  }
+  
+  .death-button {
+    width: 120px;
+    height: 60px;
+    background-color: #1FB5A3;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  /* Settings Section */
+  .settings-section {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .sound-toggle {
+    display: flex;
+    align-items: center;
+  }
+  
+  .volume-icon {
+    margin-right: 10px;
+  }
+  
+  .settings-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background-color: #1FB5A3;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  
+  /* Switch Styles */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+  }
+  
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #B9EDE7;
+    transition: .4s;
+  }
+  
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+  }
+  
+  input:checked + .slider {
+    background-color: #1FB5A3;
+  }
+  
+  input:checked + .slider:before {
+    transform: translateX(26px);
+  }
+  
+  .slider.round {
+    border-radius: 34px;
+  }
+  
+  .slider.round:before {
+    border-radius: 50%;
+  }
