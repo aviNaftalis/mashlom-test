@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { NotificationProvider } from './Notifications';
 import { CPRLogProvider, useCPRLog } from './CPRLog';
-import CprManager from './CprManager';
+import CprManager, { CPRCountersProvider } from './CprManager';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import CPRSettingsProvider from './CPRSettings';
-import { faFileLines, faHeartPulse, faSection, faPills, faListCheck, faLungs } from '@fortawesome/free-solid-svg-icons';
+import { faFileLines, faHeartPulse, faSection, faPills, faListCheck, faLungs, faBoltLightning } from '@fortawesome/free-solid-svg-icons';
 import CPRLogComponent from './CPRLog';
 import VitalSigns from './VitalSigns';
 import MedicalProcedures from './MedicalProcedures';
 import ABCDEFProcedures from './ABCDEFProcedures';
 import Airways from './Airways';
 import Medications from './Medications';
+import Defibrillator from './Defibrillator';
 import ReminderBox from './ReminderBox';
 import ResusInputs from '../Resus/ResusInputs';
 import emergencyProtocols from '../Resus/data/emergency-protocols.json';
@@ -39,6 +40,7 @@ const CprContent: React.FC = () => {
   const [proceduresExpanded, setProceduresExpanded] = useState(false);
   const [abcdefExpanded, setABCDEFExpanded] = useState(false);
   const [airwaysExpanded, setAirwaysExpanded] = useState(false);
+  const [defibrillatorExpanded, setDefibrillatorExpanded] = useState(false);
   const [showReminder, setShowReminder] = useState(false);
   const [reminderShown, setReminderShown] = useState(false);
 
@@ -47,6 +49,7 @@ const CprContent: React.FC = () => {
   const toggleMeds = () => setMedsExpanded(!medsExpanded);
   const toggleProcedures = () => setProceduresExpanded(!proceduresExpanded);
   const toggleAirways = () => setAirwaysExpanded(!airwaysExpanded);
+  const toggleDefibrillator = () => setDefibrillatorExpanded(!defibrillatorExpanded);
   const toggleABCDEF = () => {
     setABCDEFExpanded(!abcdefExpanded);
     if (!abcdefExpanded) {
@@ -72,7 +75,6 @@ const CprContent: React.FC = () => {
   const { addEntry } = useCPRLog();
 
   const handleResusInputsSubmit = (age: string, weight: number | null, protocol: string) => {
-    // Add the age and weight entry
     if (age && weight !== null) {
       addEntry({
         timestamp: new Date().toISOString(),
@@ -82,7 +84,6 @@ const CprContent: React.FC = () => {
       });
     }
 
-    // If protocol is provided, add a separate entry for it
     if (protocol) {
       const protocolName = getProtocolName(protocol);
       addEntry({
@@ -93,7 +94,6 @@ const CprContent: React.FC = () => {
       });
     }
 
-    // Automatically expand the airways section
     setAirwaysExpanded(true);
   };
 
@@ -114,72 +114,86 @@ const CprContent: React.FC = () => {
   };
 
   return (
-    <>
-      <CprManager />
-      <ResusInputs onSubmit={handleResusInputsSubmit} />
-      <div style={{ direction: 'rtl'}}>
-        <h4 className="section-header" onClick={toggleAirways}>
-          <span className="toggle-icon">{airwaysExpanded ? '-' : '+'}</span>
-          <span className="section-name"><FontAwesomeIcon icon={faLungs} /> נתיב אוויר</span>
-        </h4>
-        {airwaysExpanded && (
-          <div id="collapseable-area-airways" className={`collapseable ${airwaysExpanded ? 'expanded' : ''}`}>
-            <Airways />
-          </div>
-        )}
+    <CPRCountersProvider>
+      <>
+        <CprManager />
+        <ResusInputs onSubmit={handleResusInputsSubmit} />
+        <div style={{ direction: 'rtl'}}>
+          <h4 className="section-header" onClick={toggleAirways}>
+            <span className="toggle-icon">{airwaysExpanded ? '-' : '+'}</span>
+            <span className="section-name"><FontAwesomeIcon icon={faLungs} /> נתיב אוויר</span>
+          </h4>
+          {airwaysExpanded && (
+            <div id="collapseable-area-airways" className={`collapseable ${airwaysExpanded ? 'expanded' : ''}`}>
+              <Airways />
+            </div>
+          )}
 
-        <h4 className="section-header" onClick={toggleVitalSigns}>
-          <span className="toggle-icon">{vitalSignsExpanded ? '-' : '+'}</span>
-          <span className="section-name"><FontAwesomeIcon icon={faHeartPulse} /> מדדים</span>
-        </h4>
-        {vitalSignsExpanded && (
-          <div id="collapseable-area-vital-signs" className={`collapseable ${vitalSignsExpanded ? 'expanded' : ''}`}>
-            <VitalSigns />
-          </div>
-        )}
-        
-        <h4 className="section-header" onClick={toggleProcedures}>
-          <span className="toggle-icon">{proceduresExpanded ? '-' : '+'}</span>
-          <span className="section-name"><FontAwesomeIcon icon={faSection} /> LINE / זונדה / קטטר</span>
-        </h4>
-        {proceduresExpanded && (
-          <div id="collapseable-area-procedures" className={`collapseable ${proceduresExpanded ? 'expanded' : ''}`}>
-            <MedicalProcedures />
-          </div>
-        )}
+          <h4 className="section-header" onClick={toggleDefibrillator}>
+            <span className="toggle-icon">{defibrillatorExpanded ? '-' : '+'}</span>
+            <span className="section-name">
+              <FontAwesomeIcon icon={faBoltLightning} /> Defibrillator (מַפְעֵם)
+            </span>
+          </h4>
+          {defibrillatorExpanded && (
+            <div id="collapseable-area-defibrillator" className={`collapseable ${defibrillatorExpanded ? 'expanded' : ''}`}>
+              <Defibrillator />
+            </div>
+          )}
 
-        <h4 className="section-header" onClick={toggleMeds}>
-          <span className="toggle-icon">{medsExpanded ? '-' : '+'}</span>
-          <span className="section-name"><FontAwesomeIcon icon={faPills} /> תרופות </span>
-        </h4>
-        {medsExpanded && (
-          <div id="collapseable-area-meds" className={`collapseable ${medsExpanded ? 'expanded' : ''}`}>
-            <Medications />
-          </div>
-        )}
+          <h4 className="section-header" onClick={toggleVitalSigns}>
+            <span className="toggle-icon">{vitalSignsExpanded ? '-' : '+'}</span>
+            <span className="section-name"><FontAwesomeIcon icon={faHeartPulse} /> מדדים</span>
+          </h4>
+          {vitalSignsExpanded && (
+            <div id="collapseable-area-vital-signs" className={`collapseable ${vitalSignsExpanded ? 'expanded' : ''}`}>
+              <VitalSigns />
+            </div>
+          )}
+          
+          <h4 className="section-header" onClick={toggleProcedures}>
+            <span className="toggle-icon">{proceduresExpanded ? '-' : '+'}</span>
+            <span className="section-name"><FontAwesomeIcon icon={faSection} /> LINE / זונדה / קטטר</span>
+          </h4>
+          {proceduresExpanded && (
+            <div id="collapseable-area-procedures" className={`collapseable ${proceduresExpanded ? 'expanded' : ''}`}>
+              <MedicalProcedures />
+            </div>
+          )}
 
-        <h4 className="section-header" onClick={toggleABCDEF}>
-          <span className="toggle-icon">{abcdefExpanded ? '-' : '+'}</span>
-          <span className="section-name"><FontAwesomeIcon icon={faListCheck} /> ABCDEF </span>
-        </h4>
-        {abcdefExpanded && (
-          <div id="collapseable-area-abcdef" className={`collapseable ${abcdefExpanded ? 'expanded' : ''}`}>
-            <ABCDEFProcedures />
-          </div>
-        )}
+          <h4 className="section-header" onClick={toggleMeds}>
+            <span className="toggle-icon">{medsExpanded ? '-' : '+'}</span>
+            <span className="section-name"><FontAwesomeIcon icon={faPills} /> תרופות </span>
+          </h4>
+          {medsExpanded && (
+            <div id="collapseable-area-meds" className={`collapseable ${medsExpanded ? 'expanded' : ''}`}>
+              <Medications />
+            </div>
+          )}
 
-        <h4 className="section-header" onClick={toggleLog}>
-          <span className="toggle-icon">{logExpanded ? '-' : '+'}</span>
-          <span className="section-name"><FontAwesomeIcon icon={faFileLines} /> יומן</span>
-        </h4>      
-        {logExpanded && (
-          <div id="collapseable-area-log" className={`collapseable ${logExpanded ? 'expanded' : ''}`}>
-            <CPRLogComponent />
-          </div>
-        )}
-      </div>
-      {showReminder && <ReminderBox onClose={handleCloseReminder} />}
-    </>
+          <h4 className="section-header" onClick={toggleABCDEF}>
+            <span className="toggle-icon">{abcdefExpanded ? '-' : '+'}</span>
+            <span className="section-name"><FontAwesomeIcon icon={faListCheck} /> ABCDEF </span>
+          </h4>
+          {abcdefExpanded && (
+            <div id="collapseable-area-abcdef" className={`collapseable ${abcdefExpanded ? 'expanded' : ''}`}>
+              <ABCDEFProcedures />
+            </div>
+          )}
+
+          <h4 className="section-header" onClick={toggleLog}>
+            <span className="toggle-icon">{logExpanded ? '-' : '+'}</span>
+            <span className="section-name"><FontAwesomeIcon icon={faFileLines} /> יומן</span>
+          </h4>      
+          {logExpanded && (
+            <div id="collapseable-area-log" className={`collapseable ${logExpanded ? 'expanded' : ''}`}>
+              <CPRLogComponent />
+            </div>
+          )}
+        </div>
+        {showReminder && <ReminderBox onClose={handleCloseReminder} />}
+      </>
+    </CPRCountersProvider>
   );
 };
 

@@ -744,6 +744,31 @@
         "Labetalol_IV_0.2_mg",
         "Nifedipine_PO_0.1_mg"
       ]
+    },
+    {
+      "protocolId":"cpr",
+      "defi": [
+        {
+          "name": "defibrilation 1st",
+          "joulePerKg": 2
+        },
+        {
+          "name": "defibrilation 2st",
+          "joulePerKg": 4
+        },
+        {
+          "name": "defibrilation AFTER",
+          "joulePerKg": 10
+        },
+        {
+          "name": "synchronized shock 1st",
+          "joulePerKg": 1
+        },
+        {
+          "name": "synchronized shock AFTER",
+          "joulePerKg": 2
+        }
+      ]
     }
   ]
 }
