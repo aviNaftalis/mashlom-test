@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faVolumeLow, faRepeat, faSyringe, faBoltLightning, faGear } from '@fortawesome/free-solid-svg-icons';
+import { faVolumeLow, faRepeat, faSyringe, faBoltLightning, faGear, faRotateRight } from '@fortawesome/free-solid-svg-icons';
 import Metronome from './Metronome';
 import { useNotification } from './Notifications';
 import { useCPRLog } from './CPRLog';
@@ -124,8 +124,12 @@ const CprManager: React.FC<CprManagerProps> = () => {
   const [adrenalineTime, setAdrenalineTime] = useState(0);
   const [isSoundOn, setIsSoundOn] = useState(true);
   const [showDeathModal, setShowDeathModal] = useState(false);
+  const [showROSCModal, setShowROSCModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [deathTime, setDeathTime] = useState('');
+  const [showDeathMessage, setShowDeathMessage] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [successTime, setSuccessTime] = useState('');
   const massagerNotificationShownRef = useRef(false);
   const adrenalineNotificationShownRef = useRef(false);
   const { showNotification } = useNotification();
@@ -245,6 +249,18 @@ const CprManager: React.FC<CprManagerProps> = () => {
     return 0;
   };
 
+  const resetAll = () => {
+    setElapsedTime(0);
+    setMassagerTime(0);
+    setAdrenalineTime(0);
+    setShowDeathMessage(false);
+    setShowSuccessMessage(false);
+    setDeathTime('');
+    setSuccessTime('');
+    massagerNotificationShownRef.current = false;
+    adrenalineNotificationShownRef.current = false;
+  };
+
   const handleStartCpr = () => {
     startCpr();
     resetTimers();
@@ -258,15 +274,25 @@ const CprManager: React.FC<CprManagerProps> = () => {
     setShowDeathModal(true);
   };
 
+  const handleROSCButtonClick = () => {
+    setShowROSCModal(true);
+  };
+
+  const handleConfirmROSC = () => {
+    const currentTime = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setSuccessTime(currentTime);
+    endCpr('ROSC');
+    massagerNotificationShownRef.current = false;
+    adrenalineNotificationShownRef.current = false;
+    setShowSuccessMessage(true);
+    setShowROSCModal(false);
+  };
+
   const handleConfirmDeath = () => {
     endCpr('DEATH');
     massagerNotificationShownRef.current = false;
     adrenalineNotificationShownRef.current = false;
-    showNotification({
-      icon: faRepeat,
-      text: `נקבע מות המטופל לשעה ${deathTime}. נא לא לשכוח ECG ו- POCUS`,
-      buttons: [{ text: "הבנתי", onClick: () => {} }],
-    });
+    setShowDeathMessage(true);
     setShowDeathModal(false);
   };
 
@@ -303,13 +329,49 @@ const CprManager: React.FC<CprManagerProps> = () => {
 
       {/* Center: Actions */}
       <div className="actions-section">
-        {!isRunning ? (
+        {!isRunning && !showDeathMessage && !showSuccessMessage ? (
           <button className="start-button" onClick={handleStartCpr}>
             התחל
           </button>
+        ) : showDeathMessage ? (
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ 
+              marginBottom: '15px', 
+              color: '#666',
+              fontSize: '1.1em' 
+            }}>
+              נקבע מות המטופל לשעה {deathTime}
+              <br />
+              נא לא לשכוח ECG ו- POCUS
+            </div>
+            <button 
+              className="restart-button" 
+              onClick={resetAll}
+            >
+              <FontAwesomeIcon icon={faRotateRight} />
+              התחל מחדש
+            </button>
+          </div>
+        ) : showSuccessMessage ? (
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ 
+              marginBottom: '15px', 
+              color: '#666',
+              fontSize: '1.1em' 
+            }}>
+              ההחייאה הסתיימה ב {successTime}
+            </div>
+            <button 
+              className="restart-button" 
+              onClick={resetAll}
+            >
+              <FontAwesomeIcon icon={faRotateRight} />
+              התחל מחדש
+            </button>
+          </div>
         ) : (
           <>
-            <button className="rosc-button" onClick={() => endCpr('ROSC')}>
+            <button className="rosc-button" onClick={handleROSCButtonClick}>
               ROSC
             </button>
             <button className="death-button" onClick={handleDeathButtonClick}>
@@ -358,6 +420,24 @@ const CprManager: React.FC<CprManagerProps> = () => {
         direction={ModalDirectionOptions.RTL}
       >
         <p>שעת המוות נקבעה ל {deathTime}</p>
+      </Modal>
+
+      {/* ROSC Modal */}
+      <Modal
+        isOpen={showROSCModal}
+        setIsOpen={setShowROSCModal}
+        title="סיום ההחייאה"
+        secondaryButton={{
+          text: "ביטול",
+          onClick: () => setShowROSCModal(false),
+        }}
+        primaryButton={{
+          text: "אישור",
+          onClick: handleConfirmROSC,
+        }}
+        direction={ModalDirectionOptions.RTL}
+      >
+        <p>האם אתה בטוח שברצונך לסיים את ההחייאה?</p>
       </Modal>
 
       {/* Settings Modal */}
