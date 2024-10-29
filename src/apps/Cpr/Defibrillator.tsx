@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useResusContext } from '../Resus/ResusContext';
 import { useCPRLog } from './CPRLog';
-import { useCPRCounters } from './CprManager';
+import { useCPRCounters } from './CprManager/CPRCountersContext';
 import resusDrugsDefinitions from '../Resus/data/resus-drugs-definitions.json';
 
 interface DefiAction {

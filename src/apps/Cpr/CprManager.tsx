@@ -1,124 +1,15 @@
-import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faVolumeLow, faRepeat, faSyringe, faBoltLightning, faGear, faRotateRight } from '@fortawesome/free-solid-svg-icons';
-import Metronome from './Metronome';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { faRepeat, faSyringe } from '@fortawesome/free-solid-svg-icons';
 import { useNotification } from './Notifications';
-import { useCPRLog } from './CPRLog';
-import Modal, { ModalDirectionOptions } from '../../components/Modal';
-import SettingsModal from './SettingsModal';
 import { useCPRSettings } from './CPRSettings';
+import { useCPRCounters } from './CprManager/CPRCountersContext';
+import Metronome from './Metronome';
+import { CprManagerTimerSection } from './CprManager/CprManagerTimerSection';
+import { CprManagerActionSection } from './CprManager/CprManagerActionSection';
+import { CprManagerSettingSection } from './CprManager/CprManagerSettingSection';
 import './CprManager.css';
 
-// Define the context interface
-interface CPRCountersContextType {
-  adrenalineCount: number;
-  shockCount: number;
-  isRunning: boolean;
-  incrementAdrenaline: () => void;
-  incrementShock: () => void;
-  startCpr: () => void;
-  endCpr: (reason: 'ROSC' | 'DEATH') => void;
-}
-
-// Create the context
-export const CPRCountersContext = createContext<CPRCountersContextType | undefined>(undefined);
-
-// Create a hook for easy context usage
-export const useCPRCounters = () => {
-  const context = useContext(CPRCountersContext);
-  if (context === undefined) {
-    throw new Error('useCPRCounters must be used within a CPRCountersProvider');
-  }
-  return context;
-};
-
-interface CPRCountersProviderProps {
-  children: React.ReactNode;
-}
-
-export const CPRCountersProvider: React.FC<CPRCountersProviderProps> = ({ children }) => {
-  const [isRunning, setIsRunning] = useState(false);
-  const [adrenalineCount, setAdrenalineCount] = useState(0);
-  const [shockCount, setShockCount] = useState(0);
-  const { addEntry } = useCPRLog();
-
-  const handleAdrenaline = useCallback(() => {
-    if (isRunning) {
-      setAdrenalineCount(prev => prev + 1);
-      addEntry({
-        timestamp: new Date().toISOString(),
-        text: `ניתן אדרנלין מספר ${adrenalineCount + 1}`,
-        type: 'medication',
-        isImportant: true
-      });
-    }
-  }, [isRunning, adrenalineCount, addEntry]);
-
-  const handleShock = useCallback(() => {
-    if (isRunning) {
-      setShockCount(prev => prev + 1);
-      addEntry({
-        timestamp: new Date().toISOString(),
-        text: `ניתן שוק מספר ${shockCount + 1}`,
-        type: 'action',
-        isImportant: true
-      });
-    }
-  }, [isRunning, shockCount, addEntry]);
-
-  const startCpr = useCallback(() => {
-    setIsRunning(true);
-    setAdrenalineCount(0);
-    setShockCount(0);
-    addEntry({
-      timestamp: new Date().toISOString(),
-      text: "החייאה התחילה",
-      type: 'action',
-      isImportant: true
-    });
-  }, [addEntry]);
-
-  const endCpr = useCallback((reason: 'ROSC' | 'DEATH') => {
-    setIsRunning(false);
-    if (reason === 'ROSC') {
-      addEntry({
-        timestamp: new Date().toISOString(),
-        text: "ההחיאה הסתיימה בהצלחה",
-        type: 'action',
-        isImportant: true
-      });
-    } else {
-      addEntry({
-        timestamp: new Date().toISOString(),
-        text: "נקבע מות המטופל",
-        type: 'action',
-        isImportant: true
-      });
-    }
-  }, [addEntry]);
-
-  const value = {
-    adrenalineCount,
-    shockCount,
-    isRunning,
-    incrementAdrenaline: handleAdrenaline,
-    incrementShock: handleShock,
-    startCpr,
-    endCpr
-  };
-
-  return (
-    <CPRCountersContext.Provider value={value}>
-      {children}
-    </CPRCountersContext.Provider>
-  );
-};
-
-interface CprManagerProps {
-  // Add any props if needed
-}
-
-const CprManager: React.FC<CprManagerProps> = () => {
+const CprManager: React.FC = () => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [massagerTime, setMassagerTime] = useState(0);
   const [adrenalineTime, setAdrenalineTime] = useState(0);
@@ -130,15 +21,18 @@ const CprManager: React.FC<CprManagerProps> = () => {
   const [showDeathMessage, setShowDeathMessage] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successTime, setSuccessTime] = useState('');
+  const [shouldShowMassagerNotification, setShouldShowMassagerNotification] = useState(false);
+  const [shouldShowAdrenalineNotification, setShouldShowAdrenalineNotification] = useState(false);
+
   const massagerNotificationShownRef = useRef(false);
   const adrenalineNotificationShownRef = useRef(false);
   const { showNotification } = useNotification();
   const { settings } = useCPRSettings();
-  const { 
-    adrenalineCount, 
-    shockCount, 
-    isRunning, 
-    incrementAdrenaline, 
+  const {
+    adrenalineCount,
+    shockCount,
+    isRunning,
+    incrementAdrenaline,
     incrementShock,
     startCpr,
     endCpr
@@ -153,51 +47,21 @@ const CprManager: React.FC<CprManagerProps> = () => {
     }
   }, [settings]);
 
-  const showMassagerNotification = useCallback(() => {
-    if (!massagerNotificationShownRef.current) {
-      massagerNotificationShownRef.current = true;
-      showNotification({
-        icon: faRepeat,
-        text: "החלף מעסים ובדוק דופק",
-        buttons: [
-          { 
-            text: "בוצע", 
-            onClick: () => {
-              setMassagerTime(settings.massagerAlertSeconds);
-              massagerNotificationShownRef.current = false;
-            }
-          }
-        ],
-      });
-    }
-  }, [showNotification, settings.massagerAlertSeconds]);
+  const handleMassagerNotificationResponse = useCallback(() => {
+    setMassagerTime(settings.massagerAlertSeconds);
+    massagerNotificationShownRef.current = false;
+  }, [settings.massagerAlertSeconds]);
 
-  const showAdrenalineNotification = useCallback(() => {
-    if (!adrenalineNotificationShownRef.current) {
-      adrenalineNotificationShownRef.current = true;
-      showNotification({
-        icon: faSyringe,
-        text: "נא לשקול מתן אדרנלין",
-        buttons: [
-          {
-            text: "ניתן",
-            onClick: () => {
-              incrementAdrenaline();
-              setAdrenalineTime(settings.adrenalineAlertSeconds);
-              adrenalineNotificationShownRef.current = false;
-            }
-          },
-          {
-            text: "אין צורך",
-            onClick: () => {
-              setAdrenalineTime(settings.adrenalineAlertSeconds);
-              adrenalineNotificationShownRef.current = false;
-            }
-          }
-        ],
-      });
-    }
-  }, [showNotification, settings.adrenalineAlertSeconds, incrementAdrenaline]);
+  const handleAdrenalineGiven = useCallback(() => {
+    incrementAdrenaline();
+    setAdrenalineTime(settings.adrenalineAlertSeconds);
+    adrenalineNotificationShownRef.current = false;
+  }, [incrementAdrenaline, settings.adrenalineAlertSeconds]);
+
+  const handleAdrenalineSkipped = useCallback(() => {
+    setAdrenalineTime(settings.adrenalineAlertSeconds);
+    adrenalineNotificationShownRef.current = false;
+  }, [settings.adrenalineAlertSeconds]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -210,7 +74,9 @@ const CprManager: React.FC<CprManagerProps> = () => {
             if (prevTime > 0) {
               return prevTime - 1;
             } else {
-              showMassagerNotification();
+              if (!massagerNotificationShownRef.current) {
+                setShouldShowMassagerNotification(true);
+              }
               return 0;
             }
           });
@@ -221,7 +87,9 @@ const CprManager: React.FC<CprManagerProps> = () => {
             if (prevTime > 0) {
               return prevTime - 1;
             } else {
-              showAdrenalineNotification();
+              if (!adrenalineNotificationShownRef.current) {
+                setShouldShowAdrenalineNotification(true);
+              }
               return 0;
             }
           });
@@ -229,16 +97,45 @@ const CprManager: React.FC<CprManagerProps> = () => {
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isRunning, settings, showMassagerNotification, showAdrenalineNotification]);
+  }, [isRunning, settings]);
 
-  const formatTime = (time: number): string => {
-    const hours = Math.floor(time / 3600);
-    const minutes = Math.floor((time % 3600) / 60);
-    const seconds = time % 60;
-    return [hours, minutes, seconds]
-      .map(v => v < 10 ? "0" + v : v)
-      .join(":");
-  };
+  useEffect(() => {
+    if (shouldShowMassagerNotification && !massagerNotificationShownRef.current) {
+      massagerNotificationShownRef.current = true;
+      showNotification({
+        icon: faRepeat,
+        text: "החלף מעסים ובדוק דופק",
+        buttons: [
+          { 
+            text: "בוצע", 
+            onClick: handleMassagerNotificationResponse
+          }
+        ],
+      });
+      setShouldShowMassagerNotification(false);
+    }
+  }, [shouldShowMassagerNotification, handleMassagerNotificationResponse, showNotification]);
+
+  useEffect(() => {
+    if (shouldShowAdrenalineNotification && !adrenalineNotificationShownRef.current) {
+      adrenalineNotificationShownRef.current = true;
+      showNotification({
+        icon: faSyringe,
+        text: "נא לשקול מתן אדרנלין",
+        buttons: [
+          {
+            text: "ניתן",
+            onClick: handleAdrenalineGiven
+          },
+          {
+            text: "אין צורך",
+            onClick: handleAdrenalineSkipped
+          }
+        ],
+      });
+      setShouldShowAdrenalineNotification(false);
+    }
+  }, [shouldShowAdrenalineNotification, handleAdrenalineGiven, handleAdrenalineSkipped, showNotification]);
 
   const getDisplayTimer = (): number => {
     if (settings.timerDisplay === 'massager' && settings.massagerAlertEnabled) {
@@ -269,23 +166,13 @@ const CprManager: React.FC<CprManagerProps> = () => {
   };
 
   const handleDeathButtonClick = () => {
-    const currentTime = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const currentTime = new Date().toLocaleTimeString('he-IL', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
     setDeathTime(currentTime);
     setShowDeathModal(true);
-  };
-
-  const handleROSCButtonClick = () => {
-    setShowROSCModal(true);
-  };
-
-  const handleConfirmROSC = () => {
-    const currentTime = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    setSuccessTime(currentTime);
-    endCpr('ROSC');
-    massagerNotificationShownRef.current = false;
-    adrenalineNotificationShownRef.current = false;
-    setShowSuccessMessage(true);
-    setShowROSCModal(false);
   };
 
   const handleConfirmDeath = () => {
@@ -296,155 +183,64 @@ const CprManager: React.FC<CprManagerProps> = () => {
     setShowDeathModal(false);
   };
 
+  const handleROSCButtonClick = () => {
+    setShowROSCModal(true);
+  };
+
+  const handleConfirmROSC = () => {
+    const currentTime = new Date().toLocaleTimeString('he-IL', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+    setSuccessTime(currentTime);
+    endCpr('ROSC');
+    massagerNotificationShownRef.current = false;
+    adrenalineNotificationShownRef.current = false;
+    setShowSuccessMessage(true);
+    setShowROSCModal(false);
+  };
+
   return (
     <div className="cpr-manager-container">
-      {/* Right: Clocks, Timers, and Counters */}
-      <div className="timer-section">
-        <div className="elapsed-time">{formatTime(elapsedTime)}</div>
-        {settings.timerDisplay !== 'none' && (
-          <div className={`countdown-time ${getDisplayTimer() === 0 ? 'zero' : ''}`}>
-            {formatTime(getDisplayTimer())}
-          </div>
-        )}
-        
-        {/* Counter Section */}
-        <div className="counter-section">
-          <div 
-            className={`counter-item ${isRunning ? 'active' : ''}`}
-            onClick={incrementAdrenaline}
-          >
-            <FontAwesomeIcon icon={faSyringe} />
-            <span>אדרנלין: {adrenalineCount}</span>
-          </div>
-          
-          <div 
-            className={`counter-item ${isRunning ? 'active' : ''}`}
-            onClick={incrementShock}
-          >
-            <FontAwesomeIcon icon={faBoltLightning} />
-            <span>שוק: {shockCount}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Center: Actions */}
-      <div className="actions-section">
-        {!isRunning && !showDeathMessage && !showSuccessMessage ? (
-          <button className="start-button" onClick={handleStartCpr}>
-            התחל
-          </button>
-        ) : showDeathMessage ? (
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ 
-              marginBottom: '15px', 
-              color: '#666',
-              fontSize: '1.1em' 
-            }}>
-              נקבע מות המטופל לשעה {deathTime}
-              <br />
-              נא לא לשכוח ECG ו- POCUS
-            </div>
-            <button 
-              className="restart-button" 
-              onClick={resetAll}
-            >
-              <FontAwesomeIcon icon={faRotateRight} />
-              התחל מחדש
-            </button>
-          </div>
-        ) : showSuccessMessage ? (
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ 
-              marginBottom: '15px', 
-              color: '#666',
-              fontSize: '1.1em' 
-            }}>
-              ההחייאה הסתיימה ב {successTime}
-            </div>
-            <button 
-              className="restart-button" 
-              onClick={resetAll}
-            >
-              <FontAwesomeIcon icon={faRotateRight} />
-              התחל מחדש
-            </button>
-          </div>
-        ) : (
-          <>
-            <button className="rosc-button" onClick={handleROSCButtonClick}>
-              ROSC
-            </button>
-            <button className="death-button" onClick={handleDeathButtonClick}>
-              DEATH
-            </button>
-          </>
-        )}
-      </div>
-
-      {/* Left: Settings */}
-      <div className="settings-section">
-        <div className="sound-toggle">
-          <label className="switch">
-            <input
-              type="checkbox"
-              checked={isSoundOn}
-              onChange={() => setIsSoundOn(!isSoundOn)}
-            />
-            <span className="slider round"></span>
-          </label>
-          <FontAwesomeIcon icon={faVolumeLow} className="volume-icon" />
-        </div>
-
-        <button className="settings-button" onClick={() => setShowSettingsModal(true)}>
-          <FontAwesomeIcon icon={faGear} />
-          הגדרות
-        </button>
-      </div>
-
-      {/* Metronome */}
-      <Metronome isPlaying={isRunning && isSoundOn} bpm={100} />
-
-      {/* Death Modal */}
-      <Modal
-        isOpen={showDeathModal}
-        setIsOpen={setShowDeathModal}
-        title="אישור קביעת מוות"
-        secondaryButton={{
-          text: "ביטול",
-          onClick: () => setShowDeathModal(false),
-        }}
-        primaryButton={{
-          text: "אישור",
-          onClick: handleConfirmDeath,
-        }}
-        direction={ModalDirectionOptions.RTL}
-      >
-        <p>שעת המוות נקבעה ל {deathTime}</p>
-      </Modal>
-
-      {/* ROSC Modal */}
-      <Modal
-        isOpen={showROSCModal}
-        setIsOpen={setShowROSCModal}
-        title="סיום ההחייאה"
-        secondaryButton={{
-          text: "ביטול",
-          onClick: () => setShowROSCModal(false),
-        }}
-        primaryButton={{
-          text: "אישור",
-          onClick: handleConfirmROSC,
-        }}
-        direction={ModalDirectionOptions.RTL}
-      >
-        <p>האם אתה בטוח שברצונך לסיים את ההחייאה?</p>
-      </Modal>
-
-      {/* Settings Modal */}
-      <SettingsModal 
-        isOpen={showSettingsModal}
-        onClose={() => setShowSettingsModal(false)}
+      <CprManagerTimerSection
+        elapsedTime={elapsedTime}
+        displayTimer={getDisplayTimer()}
+        isRunning={isRunning}
+        adrenalineCount={adrenalineCount}
+        shockCount={shockCount}
+        timerDisplay={settings.timerDisplay}
+        onIncrementAdrenaline={incrementAdrenaline}
+        onIncrementShock={incrementShock}
       />
+
+      <CprManagerActionSection
+        isRunning={isRunning}
+        showDeathMessage={showDeathMessage}
+        showSuccessMessage={showSuccessMessage}
+        deathTime={deathTime}
+        successTime={successTime}
+        showDeathModal={showDeathModal}
+        showROSCModal={showROSCModal}
+        onStartCpr={handleStartCpr}
+        onROSCClick={handleROSCButtonClick}
+        onDeathClick={handleDeathButtonClick}
+        onConfirmROSC={handleConfirmROSC}
+        onConfirmDeath={handleConfirmDeath}
+        onResetAll={resetAll}
+        onCloseDeathModal={() => setShowDeathModal(false)}
+        onCloseROSCModal={() => setShowROSCModal(false)}
+      />
+
+      <CprManagerSettingSection
+        isSoundOn={isSoundOn}
+        showSettingsModal={showSettingsModal}
+        onSoundToggle={setIsSoundOn}
+        onSettingsClick={() => setShowSettingsModal(true)}
+        onCloseSettings={() => setShowSettingsModal(false)}
+      />
+
+      <Metronome isPlaying={isRunning && isSoundOn} bpm={100} />
     </div>
   );
 };
