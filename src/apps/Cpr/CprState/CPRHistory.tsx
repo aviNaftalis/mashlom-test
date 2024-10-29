@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loadArchivedCPRs, ArchivedCPR } from './storage';
+import { loadArchivedCPRs } from './storage';
+import { ArchivedCPR } from './types';
 
 export const CPRHistory: React.FC = () => {
   const navigate = useNavigate();

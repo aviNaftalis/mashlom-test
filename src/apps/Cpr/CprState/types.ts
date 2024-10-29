@@ -56,7 +56,7 @@ export interface CPRTimerState {
   }
 
   export interface ResusContextState {
-    age: string;
+    age: string | null;
     weight: number | null;
     protocol: string | null;
   }
@@ -75,17 +75,22 @@ export interface CPRTimerState {
   export interface CPRState {
     id: string;
     startTime: string;
-    timers: CPRTimerState;
-    counters: CPRCountersState;
-    cprManagerSettings: CprManagerSettings;
-    endState: CPREndState;
-    airways: AirwaysState;
-    defibrillator: DefibrillatorState;
-    vitalSigns: VitalSignsState;
-    procedures: ProceduresState;
-    medications: MedicationsState;
-    resusContext: ResusContextState;
-    log: CPRLog;
+    timers?: CPRTimerState;
+    counters?: CPRCountersState;
+    cprManagerSettings?: CprManagerSettings;
+    endState?: CPREndState;
+    airways?: AirwaysState;
+    defibrillator?: DefibrillatorState;
+    vitalSigns?: VitalSignsState;
+    procedures?: ProceduresState;
+    medications?: MedicationsState;
+    resusContext?: ResusContextState;
+    log?: CPRLog;
   }
 
-  
+  export interface ArchivedCPR extends CPRState {
+    id: string;
+    startTime: string;
+    endTime: string;
+    status: 'DEATH' | 'ROSC';
+  }

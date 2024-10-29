@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { CPRState } from '../types';
-import { saveCurrentState, clearCurrentState, archiveCPRState, loadCurrentState } from '../storage';
+import { CPRState } from './types';
+import { saveCurrentState, clearCurrentState, archiveCPRState, loadCurrentState } from './storage';
 
 interface InitialStateCallbacks {
   setElapsedTime: (time: number) => void;
@@ -40,17 +40,17 @@ export const useCPRStateReporter = (
     const savedState = loadCurrentState();
     if (savedState) {
       // Restore timers
-      callbacks.setElapsedTime(savedState.timers.elapsedTime);
-      callbacks.setMassagerTime(savedState.timers.massagerTime);
-      callbacks.setAdrenalineTime(savedState.timers.adrenalineTime);
+      callbacks.setElapsedTime(savedState.timers?.elapsedTime || 0);
+      callbacks.setMassagerTime(savedState.timers?.massagerTime || 0);
+      callbacks.setAdrenalineTime(savedState.timers?.adrenalineTime || 0);
 
       // Restore CPR status
-      if (savedState.endState.status === 'ACTIVE') {
+      if (savedState.endState?.status === 'ACTIVE') {
         callbacks.startCpr();
-      } else if (savedState.endState.status === 'DEATH') {
+      } else if (savedState.endState?.status === 'DEATH') {
         callbacks.setShowDeathMessage(true);
         callbacks.setDeathTime(savedState.endState.endTime || '');
-      } else if (savedState.endState.status === 'ROSC') {
+      } else if (savedState.endState?.status === 'ROSC') {
         callbacks.setShowSuccessMessage(true);
         callbacks.setSuccessTime(savedState.endState.endTime || '');
       }

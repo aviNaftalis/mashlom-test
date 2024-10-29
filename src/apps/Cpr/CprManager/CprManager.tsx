@@ -3,7 +3,7 @@ import { faRepeat, faSyringe } from '@fortawesome/free-solid-svg-icons';
 import { useNotification } from '../Notifications';
 import { useCPRSettings } from '../CPRSettings';
 import { useCPRCounters } from './CPRCountersContext';
-import { useCPRStateReporter } from '../CprState/hooks/useCPRStateReporter';
+import { useCPRStateReporter } from '../CprState/useCPRStateReporter';
 import { loadCurrentState, saveCurrentState } from '../CprState/storage';
 import Metronome from '../Metronome';
 import { CprManagerTimerSection } from './CprManagerTimerSection';

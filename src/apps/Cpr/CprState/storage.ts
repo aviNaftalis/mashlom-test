@@ -1,4 +1,4 @@
-import { CPRState } from './types';
+import { CPRState, ArchivedCPR } from './types';
 
 const CURRENT_CPR_KEY = 'current_cpr_state';
 const ARCHIVED_CPRS_KEY = 'archived_cprs';
@@ -6,15 +6,15 @@ const MAX_ARCHIVED_CPRS = 5;
 
 export const saveCurrentState = (state: Partial<CPRState>, section?: keyof CPRState): void => {
   try {
-    const currentState = loadCurrentState() || {};
+    const currentState = (loadCurrentState() || {}) as Partial<CPRState>;
     
     // If a specific section is provided, only update that section
     if (section) {
       const newState = {
         ...currentState,
         [section]: {
-          ...currentState[section],
-          ...state[section]
+            ...(typeof currentState[section] === 'object' ? currentState[section] : {}),
+            ...(typeof state[section] === 'object' ? state[section] : {})
         }
       };
       localStorage.setItem(CURRENT_CPR_KEY, JSON.stringify(newState));
@@ -54,4 +54,14 @@ export const archiveCPRState = (state: CPRState): void => {
   } catch (error) {
     console.error('Error archiving CPR state:', error);
   }
+};
+
+export const loadArchivedCPRs = (): ArchivedCPR[] => {
+    try {
+      const archives = localStorage.getItem(ARCHIVED_CPRS_KEY);
+      return archives ? JSON.parse(archives) : [];
+    } catch (error) {
+      console.error('Error loading archived CPRs:', error);
+      return [];
+    }
 };
