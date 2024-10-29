@@ -442,6 +442,68 @@
       "maxDose": "10",
       "maxDoseUnit": "mg",
       "concentration": "1/1"
+    },
+    {
+      "id": "Dexamethasone_IV_0.6_mg",
+      "name": "Dexamethasone",
+      "howToGive": "IV",
+      "dose_per_kg": 0.6,
+      "dose_unit": "mg",
+      "maxDose": "16",
+      "maxDoseUnit": "mg",
+      "concentration": "4/1"
+    },
+    {
+      "id": "SodiumChloride0.9%_IV_20_ml",
+      "name": "Sodium Chloride 0.9%",
+      "howToGive": "IV",
+      "dose_per_kg": 20,
+      "dose_unit": "ml",
+      "concentration": "",
+      "type": "fluid"
+    },
+    {
+      "id": "1UnitPacked_IV_20_ml",
+      "name": "1 unit of Packed cells",
+      "howToGive": "IV",
+      "dose_per_kg": 20,
+      "dose_unit": "ml",
+      "concentration": "",
+      "maxDose": "275",
+      "maxDoseUnit": "ml",
+      "type": "fluid"
+    },
+    {
+      "id": "1UnitFFP_IV_20_ml",
+      "name": "1 unit of FFP",
+      "howToGive": "IV",
+      "dose_per_kg": 20,
+      "dose_unit": "ml",
+      "concentration": "",
+      "maxDose": "200",
+      "maxDoseUnit": "ml",
+      "type": "fluid"
+    },
+    {
+      "id": "1UnitPlatelets_IV_15_ml",
+      "name": "1 unit of Platelets",
+      "howToGive": "IV",
+      "dose_per_kg": 15,
+      "dose_unit": "ml",
+      "concentration": "",
+      "maxDose": "90",
+      "maxDoseUnit": "ml",
+      "type": "fluid"
+    },
+    {
+      "id": "Hexacapron_IVIM_15_mg",
+      "name": "Hexacapron",
+      "howToGive": "IV/IM",
+      "dose_per_kg": 15,
+      "dose_unit": "mg",
+      "maxDose": "1000",
+      "maxDoseUnit": "mg",
+      "concentration": "500/5"
     }
   ],
   "drips": [
@@ -743,6 +805,34 @@
         "Hydralazine_IV_0.2_mg",
         "Labetalol_IV_0.2_mg",
         "Nifedipine_PO_0.1_mg"
+      ]
+    },
+    {
+      "protocolId":"asthma",
+      "drugs":[
+        "Dexamethasone_IV_0.6_mg",
+        "SodiumChloride0.9%_IV_20_ml",
+        "Adrenaline1:1000_IM_0.01_mg"
+      ]
+    },
+    {
+      "protocolId":"massive-blood-transfusion",
+      "drugs":[
+        "1UnitPacked_IV_20_ml",
+        "1UnitFFP_IV_20_ml",
+        "1UnitPlatelets_IV_15_ml"
+      ]
+    },
+    {
+      "protocolId":"stridor",
+      "drugs":[
+        "Dexamethasone_IV_0.6_mg"
+      ]
+    },
+    {
+      "protocolId": "angioedema",
+      "drugs":[
+        "Hexacapron_IVIM_15_mg"
       ]
     },
     {
