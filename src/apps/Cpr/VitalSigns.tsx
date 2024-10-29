@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { useCPRLog } from './CPRLog';
+import { loadCurrentState, saveCurrentState } from './CprState/storage';
 import './VitalSigns.css';
 
 interface VitalSigns {
@@ -16,7 +17,12 @@ interface VitalSigns {
 
 const VitalSigns: React.FC = () => {
   const { addEntry } = useCPRLog();
-  const [vitalSigns, setVitalSigns] = useState<VitalSigns[]>([]);
+  const [vitalSigns, setVitalSigns] = useState<VitalSigns[]>(() => {
+    // Initialize from storage or empty array
+    const savedState = loadCurrentState();
+    return savedState?.vitalSigns?.signs || [];
+  });
+  
   const [currentVitalSigns, setCurrentVitalSigns] = useState<VitalSigns>({
     timestamp: '',
     heartRate: '',
@@ -64,7 +70,17 @@ const VitalSigns: React.FC = () => {
       ...currentVitalSigns,
       timestamp: new Date().toISOString(),
     };
-    setVitalSigns(prev => [...prev, newVitalSigns]);
+    
+    // Update local state
+    const updatedSigns = [...vitalSigns, newVitalSigns];
+    setVitalSigns(updatedSigns);
+    
+    // Save to storage
+    saveCurrentState({
+      vitalSigns: {
+        signs: updatedSigns
+      }
+    }, 'vitalSigns');
 
     const logEntries: string[] = [];
     if (newVitalSigns.heartRate) logEntries.push(`דופק: ${newVitalSigns.heartRate} BPM`);

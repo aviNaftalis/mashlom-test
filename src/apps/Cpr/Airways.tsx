@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useCPRLog } from './CPRLog';
 import airwaysData from '../Resus/data/airways.json';
 import { useResusContext } from '../Resus/ResusContext';
+import { loadCurrentState, saveCurrentState } from './CprState/storage';
 import AirwaysRecommendedValues from './AirwaysRecommendedValues';
 import './Airways.css';
 
@@ -25,13 +26,17 @@ const Airways: React.FC = () => {
   const { addEntry } = useCPRLog();
   const { age, weight } = useResusContext();
   const [recommendedValues, setRecommendedValues] = useState<RecommendedValues>({} as RecommendedValues);
-  const [data, setData] = useState<AirwaysData>({
-    airwayType: null,
-    airwaySize: '',
-    hasAmbu: false,
-    hasChestDrain: false,
-    chestDrainSize: '',
-    hasSurgicalAirway: false
+  const [data, setData] = useState<AirwaysData>(() => {
+    // Initialize state from storage or default values
+    const savedState = loadCurrentState();
+    return savedState?.airways || {
+      airwayType: null,
+      airwaySize: '',
+      hasAmbu: false,
+      hasChestDrain: false,
+      chestDrainSize: '',
+      hasSurgicalAirway: false
+    };
   });
 
   // Get recommended values when age changes
@@ -72,7 +77,11 @@ const Airways: React.FC = () => {
       defaultSize = String(recommendedValues.lma || '');
     }
     
-    setData({ ...data, airwayType: type, airwaySize: defaultSize });
+    setData(prev => ({
+      ...prev,
+      airwayType: type,
+      airwaySize: defaultSize
+    }));
   };
 
   // Set default chest drain size when checked
@@ -83,10 +92,18 @@ const Airways: React.FC = () => {
       defaultSize = getAverageFromRange(sizeRange);
     }
     
-    setData({ ...data, hasChestDrain: checked, chestDrainSize: defaultSize });
+    setData(prev => ({
+      ...prev,
+      hasChestDrain: checked,
+      chestDrainSize: defaultSize
+    }));
   };
 
   const handleConfirm = () => {
+    // Save airways data
+    saveCurrentState({ airways: data }, 'airways');
+
+    // Add log entries
     if (data.airwayType) {
       addEntry({
         timestamp: new Date().toISOString(),
@@ -123,13 +140,11 @@ const Airways: React.FC = () => {
       });
     }
 
-    const toggleAirways = () => {
-      const toggleButton = document.querySelector('.section-header') as HTMLElement;
-      if (toggleButton) {
-        toggleButton.click();
-      }
-    };
-    toggleAirways();
+    // Close the section
+    const toggleButton = document.querySelector('.section-header') as HTMLElement;
+    if (toggleButton) {
+      toggleButton.click();
+    }
   };
 
   return (
@@ -180,7 +195,7 @@ const Airways: React.FC = () => {
             <input
               type="number"
               value={data.airwaySize}
-              onChange={(e) => setData({ ...data, airwaySize: e.target.value })}
+              onChange={(e) => setData(prev => ({ ...prev, airwaySize: e.target.value }))}
             />
           </div>
         )}
@@ -191,7 +206,7 @@ const Airways: React.FC = () => {
             <input
               type="checkbox"
               checked={data.hasAmbu}
-              onChange={(e) => setData({ ...data, hasAmbu: e.target.checked })}
+              onChange={(e) => setData(prev => ({ ...prev, hasAmbu: e.target.checked }))}
             />
             אמבו
           </label>
@@ -216,7 +231,7 @@ const Airways: React.FC = () => {
               type="number"
               placeholder="גודל ב fr"
               value={data.chestDrainSize}
-              onChange={(e) => setData({ ...data, chestDrainSize: e.target.value })}
+              onChange={(e) => setData(prev => ({ ...prev, chestDrainSize: e.target.value }))}
             />
           </div>
         )}
@@ -227,7 +242,7 @@ const Airways: React.FC = () => {
             <input
               type="checkbox"
               checked={data.hasSurgicalAirway}
-              onChange={(e) => setData({ ...data, hasSurgicalAirway: e.target.checked })}
+              onChange={(e) => setData(prev => ({ ...prev, hasSurgicalAirway: e.target.checked }))}
             />
             נתיב אוויר כירורגי
           </label>

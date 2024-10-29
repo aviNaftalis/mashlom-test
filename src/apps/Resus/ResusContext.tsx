@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 interface ResusContextType {
@@ -29,16 +29,21 @@ export const ResusProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const navigate = useNavigate();
   const location = useLocation();
+  const initialLoadDone = useRef(false);
 
   useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const ageParam = searchParams.get('age');
-    const weightParam = searchParams.get('weight');
-    const protocolParam = searchParams.get('protocol');
+    if (!initialLoadDone.current) {
+      const searchParams = new URLSearchParams(location.search);
+      const ageParam = searchParams.get('age');
+      const weightParam = searchParams.get('weight');
+      const protocolParam = searchParams.get('protocol');
 
-    if (ageParam) setAge(ageParam);
-    if (weightParam) setWeight(Number(weightParam));
-    if (protocolParam) setProtocol(protocolParam);
+      if (ageParam) setAge(ageParam);
+      if (weightParam) setWeight(Number(weightParam));
+      if (protocolParam) setProtocol(protocolParam);
+
+      initialLoadDone.current = true;
+    }
   }, []);
 
   const updateContext = (newAge: string, newWeight: number | null, newProtocol: string | null) => {

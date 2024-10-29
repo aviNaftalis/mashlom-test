@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useCPRLog } from '../CPRLog';
+import { loadCurrentState } from '../CprState/storage';
 
 interface CPRCountersContextType {
   adrenalineCount: number;
@@ -30,6 +31,16 @@ export const CPRCountersProvider: React.FC<CPRCountersProviderProps> = ({ childr
   const [adrenalineCount, setAdrenalineCount] = useState(0);
   const [shockCount, setShockCount] = useState(0);
   const { addEntry } = useCPRLog();
+
+  // Restore counters state on mount
+  useEffect(() => {
+    const savedState = loadCurrentState();
+    if (savedState) {
+      setAdrenalineCount(savedState.counters?.adrenalineCount || 0);
+      setShockCount(savedState.counters?.shockCount || 0);
+      setIsRunning(savedState.endState?.status === 'ACTIVE');
+    }
+  }, []);
 
   const handleAdrenaline = useCallback(() => {
     if (isRunning) {
@@ -65,13 +76,7 @@ export const CPRCountersProvider: React.FC<CPRCountersProviderProps> = ({ childr
     setIsRunning(true);
     setAdrenalineCount(0);
     setShockCount(0);
-    addEntry({
-      timestamp: new Date().toISOString(),
-      text: "החייאה התחילה",
-      type: 'action',
-      isImportant: true
-    });
-  }, [addEntry]);
+  }, []);
 
   const endCpr = useCallback((reason: 'ROSC' | 'DEATH') => {
     setIsRunning(false);

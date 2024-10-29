@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useResusContext } from '../Resus/ResusContext';
 import { useCPRLog } from './CPRLog';
 import { useCPRCounters } from './CprManager/CPRCountersContext';
+import { loadCurrentState, saveCurrentState } from './CprState/storage';
 import resusDrugsDefinitions from '../Resus/data/resus-drugs-definitions.json';
 
 interface DefiAction {
@@ -13,7 +14,11 @@ const Defibrillator: React.FC = () => {
   const { weight } = useResusContext();
   const { addEntry } = useCPRLog();
   const { incrementShock } = useCPRCounters();
-  const [lastUsedTimes, setLastUsedTimes] = useState<{ [key: string]: string }>({});
+  const [lastUsedTimes, setLastUsedTimes] = useState<{ [key: string]: string }>(() => {
+    // Initialize state from storage or default values
+    const savedState = loadCurrentState();
+    return savedState?.defibrillator?.lastUsedTimes || {};
+  });
   
   const getDefi = (multiplier: number): number => {
     return weight ? Math.min(multiplier * weight, 200) : 0;
@@ -30,10 +35,20 @@ const Defibrillator: React.FC = () => {
       second: '2-digit'
     });
 
-    setLastUsedTimes(prev => ({
-      ...prev,
+    const newLastUsedTimes = {
+      ...lastUsedTimes,
       [defiAction.name]: currentTime
-    }));
+    };
+
+    // Update local state
+    setLastUsedTimes(newLastUsedTimes);
+
+    // Save to storage
+    saveCurrentState({
+      defibrillator: {
+        lastUsedTimes: newLastUsedTimes
+      }
+    }, 'defibrillator');
 
     incrementShock();
 
@@ -56,7 +71,8 @@ const Defibrillator: React.FC = () => {
         <colgroup>
           <col style={{ width: '40%' }}/>
           <col style={{ width: '35%' }}/>
-          <col style={{ width: '25%' }}/></colgroup>
+          <col style={{ width: '25%' }}/>
+        </colgroup>
         <tbody>
           {defibrillatorActions.map((defi, index) => (
             <tr key={index}>
@@ -71,7 +87,6 @@ const Defibrillator: React.FC = () => {
                 textAlign: 'left', 
                 padding: '8px', 
                 border: '1px solid #ccc',
-                
               }}>
                 <span style={{ fontWeight: "bold"}}>
                   {getDefi(defi.joulePerKg)} ({defi.joulePerKg}J/Kg)

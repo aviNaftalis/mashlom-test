@@ -6,6 +6,7 @@ import drugsDataFile from '../Resus/data/resus-drugs-definitions.json';
 import emergencyProtocols from '../Resus/data/emergency-protocols.json';
 import DrugComponent from '../Resus/Drug';
 import { useCPRLog } from './CPRLog';
+import { loadCurrentState, saveCurrentState } from './CprState/storage';
 import './Medications.css';
 
 interface Drug {
@@ -68,8 +69,9 @@ interface EmergencyProtocolsData {
 const MedicationsTable: React.FC<{
   title: string;
   drugs: Drug[];
-}> = ({ title, drugs }) => {
-  const [givenDrugs, setGivenDrugs] = useState<Record<string, boolean>>({});
+  givenDrugs: Record<string, boolean>;
+  onGiveMedication: (drug: Drug) => void;
+}> = ({ title, drugs, givenDrugs, onGiveMedication }) => {
   const { addEntry } = useCPRLog();
   const { weight } = useResusContext();
 
@@ -126,11 +128,6 @@ const MedicationsTable: React.FC<{
   };
 
   const handleGiveMedication = (drug: Drug) => {
-    setGivenDrugs(prev => ({
-      ...prev,
-      [drug.id]: !prev[drug.id]
-    }));
-
     if (!givenDrugs[drug.id]) {
       const text = `${drug.name}: ${getDoseByWeightWithMaxLimitFormatted(drug)} ${drug.dose_unit}, ${calcAmountToAdminister(drug)} ${getAdministrationUnit(drug)}`;
       addEntry({
@@ -140,6 +137,7 @@ const MedicationsTable: React.FC<{
         isImportant: false
       });
     }
+    onGiveMedication(drug);
   };
 
   return (
@@ -179,6 +177,12 @@ const Medications: React.FC = () => {
   const drugsData = drugsDataFile as MedicationGuide;
   const protocols = emergencyProtocols as EmergencyProtocolsData;
 
+  // Initialize givenDrugs state from storage
+  const [givenDrugs, setGivenDrugs] = useState<Record<string, boolean>>(() => {
+    const savedState = loadCurrentState();
+    return savedState?.medications?.givenDrugs || {};
+  });
+
   // Get Resus Drugs
   const resusSection = drugsData.sections.find(section => section.name === "Resus Drugs");
   const resusDrugs = resusSection ? resusSection.drugs.map(drugId => 
@@ -199,15 +203,42 @@ const Medications: React.FC = () => {
     return protocolData?.name || '';
   };
 
+  const handleGiveMedication = (drug: Drug) => {
+    const newGivenDrugs = {
+      ...givenDrugs,
+      [drug.id]: !givenDrugs[drug.id]
+    };
+    
+    // Update local state
+    setGivenDrugs(newGivenDrugs);
+    
+    // Save to storage
+    saveCurrentState({
+      medications: {
+        givenDrugs: newGivenDrugs
+      }
+    }, 'medications');
+  };
+
   return (
     <div id="medications-content" className="medications-container">
       <div style={{ marginBottom: '2rem' }}>
-        <MedicationsTable title="תרופות החייאה" drugs={resusDrugs} />
+        <MedicationsTable 
+          title="תרופות החייאה" 
+          drugs={resusDrugs} 
+          givenDrugs={givenDrugs}
+          onGiveMedication={handleGiveMedication}
+        />
       </div>
 
       {protocol && protocolDrugs.length > 0 && (
         <div>
-          <MedicationsTable title={`תרופות ${getProtocolName(protocol)}`} drugs={protocolDrugs} />
+          <MedicationsTable 
+            title={`תרופות ${getProtocolName(protocol)}`} 
+            drugs={protocolDrugs}
+            givenDrugs={givenDrugs}
+            onGiveMedication={handleGiveMedication}
+          />
         </div>
       )}
     </div>

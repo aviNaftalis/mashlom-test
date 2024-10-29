@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useCPRLog } from './CPRLog';
+import { loadCurrentState, saveCurrentState } from './CprState/storage';
 import './MedicalProcedures.css';
 
 interface ProcedureLog {
@@ -8,7 +9,11 @@ interface ProcedureLog {
 
 const MedicalProcedures: React.FC = () => {
   const { addEntry } = useCPRLog();
-  const [lastPerformed, setLastPerformed] = useState<ProcedureLog>({});
+  const [lastPerformed, setLastPerformed] = useState<ProcedureLog>(() => {
+    // Initialize from storage or empty object
+    const savedState = loadCurrentState();
+    return savedState?.procedures?.lastPerformed || {};
+  });
 
   const procedures = [
     { id: 'catheter', label: 'קטטר שתן', logText: 'חובר קטטר שתן'},
@@ -20,13 +25,27 @@ const MedicalProcedures: React.FC = () => {
 
   const handleProcedureClick = (procedure: { id: string; logText: string }) => {
     const timestamp = new Date().toISOString();
+    
+    // Update local state
+    const newLastPerformed = { 
+      ...lastPerformed, 
+      [procedure.id]: timestamp 
+    };
+    setLastPerformed(newLastPerformed);
+
+    // Save to storage
+    saveCurrentState({
+      procedures: {
+        lastPerformed: newLastPerformed
+      }
+    }, 'procedures');
+
     addEntry({
       timestamp,
       text: procedure.logText,
       type: 'action',
       isImportant: false,
     });
-    setLastPerformed(prev => ({ ...prev, [procedure.id]: timestamp }));
   };
 
   const renderProcedureButton = (procedure: any) => (

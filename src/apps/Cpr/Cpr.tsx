@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { NotificationProvider } from './Notifications';
 import { CPRLogProvider, useCPRLog } from './CPRLog';
 import CprManager from './CprManager/CprManager';
@@ -15,6 +15,8 @@ import Medications from './Medications';
 import Defibrillator from './Defibrillator';
 import ReminderBox from './ReminderBox';
 import ResusInputs from '../Resus/ResusInputs';
+import { useResusContext } from '../Resus/ResusContext';
+import { loadCurrentState, saveCurrentState } from './CprState/storage';
 import emergencyProtocols from '../Resus/data/emergency-protocols.json';
 import './Cpr.css';
 
@@ -35,6 +37,8 @@ interface EmergencyProtocols {
 }
 
 const CprContent: React.FC = () => {
+  const { addEntry } = useCPRLog();
+  const { updateContext } = useResusContext();
   const [logExpanded, setLogExpanded] = useState(false);
   const [vitalSignsExpanded, setVitalSignsExpanded] = useState(false);
   const [medsExpanded, setMedsExpanded] = useState(false);
@@ -44,6 +48,21 @@ const CprContent: React.FC = () => {
   const [defibrillatorExpanded, setDefibrillatorExpanded] = useState(false);
   const [showReminder, setShowReminder] = useState(false);
   const [reminderShown, setReminderShown] = useState(false);
+  const hasRestoredState = useRef(false);
+
+  // Restore ResusContext values from storage only once on mount
+  useEffect(() => {
+    if (!hasRestoredState.current) {
+      const savedState = loadCurrentState();
+      if (savedState?.resusContext) {
+        const { age, weight, protocol } = savedState.resusContext;
+        if (age || weight || protocol) {  // Only update if we have some values
+          updateContext(age || '', weight || null, protocol || null);
+        }
+      }
+      hasRestoredState.current = true;
+    }
+  }, [updateContext]);
 
   const toggleLog = () => setLogExpanded(!logExpanded);
   const toggleVitalSigns = () => setVitalSignsExpanded(!vitalSignsExpanded);
@@ -73,9 +92,16 @@ const CprContent: React.FC = () => {
     return () => clearTimeout(timer);
   }, [abcdefExpanded, reminderShown]);
 
-  const { addEntry } = useCPRLog();
-
   const handleResusInputsSubmit = (age: string, weight: number | null, protocol: string) => {
+    // Save context values to storage
+    saveCurrentState({
+      resusContext: {
+        age,
+        weight,
+        protocol
+      }
+    }, 'resusContext');
+
     if (age && weight !== null) {
       addEntry({
         timestamp: new Date().toISOString(),

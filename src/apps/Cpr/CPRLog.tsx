@@ -1,10 +1,11 @@
-import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import React, { useState, createContext, useContext, ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faEdit, faCirclePlus } from '@fortawesome/free-solid-svg-icons';
 import Image from '../../components/Image';
 import EntryDialog from './EntryDialog';
 import ExportButton from './CPRLogPDF';
+import { loadCurrentState, saveCurrentState } from './CprState/storage';
 import './CPRLog.css';
 
 export interface LogEntry {
@@ -25,50 +26,83 @@ interface CPRLogContextType {
   addEntry: (entry: Omit<LogEntry, 'id'>) => void;
   updateEntry: (id: string, updatedEntry: Partial<LogEntry>) => void;
   deleteEntry: (id: string) => void;
+  clearAllEntries: () => void; 
 }
 
 const CPRLogContext = createContext<CPRLogContextType | undefined>(undefined);
 
 export const CPRLogProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [log, setLog] = useState<CPRLog>({ patientId: '', entries: [] });
-
-  useEffect(() => {
-    const storedLog = localStorage.getItem('cprLog');
-    if (storedLog) {
-      setLog(JSON.parse(storedLog));
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('cprLog', JSON.stringify(log));
-  }, [log]);
+  const [log, setLog] = useState<CPRLog>(() => {
+    // Initialize from storage on mount
+    const savedState = loadCurrentState();
+    return savedState?.log || { patientId: '', entries: [] };
+  });
 
   const addEntry = (entry: Omit<LogEntry, 'id'>) => {
     const newEntry = { ...entry, id: Date.now().toString() };
-    setLog(prevLog => ({
-      ...prevLog,
-      entries: [...prevLog.entries, newEntry]
-    }));
+    const newLog = {
+      ...log,
+      entries: [...log.entries, newEntry]
+    };
+    
+    // Update local state
+    setLog(newLog);
+    
+    // Save to storage
+    saveCurrentState({
+      log: newLog
+    }, 'log');
   };
 
   const updateEntry = (id: string, updatedEntry: Partial<LogEntry>) => {
-    setLog(prevLog => ({
-      ...prevLog,
-      entries: prevLog.entries.map(entry =>
+    const newLog = {
+      ...log,
+      entries: log.entries.map(entry =>
         entry.id === id ? { ...entry, ...updatedEntry } : entry
       )
-    }));
+    };
+    
+    // Update local state
+    setLog(newLog);
+    
+    // Save to storage
+    saveCurrentState({
+      log: newLog
+    }, 'log');
+  };
+
+  const clearAllEntries = () => {
+    const newLog = {
+      ...log,
+      entries: []
+    };
+    
+    // Update local state
+    setLog(newLog);
+    
+    // Save to storage
+    saveCurrentState({
+      log: newLog
+    }, 'log');
   };
 
   const deleteEntry = (id: string) => {
-    setLog(prevLog => ({
-      ...prevLog,
-      entries: prevLog.entries.filter(entry => entry.id !== id)
-    }));
+    const newLog = {
+      ...log,
+      entries: log.entries.filter(entry => entry.id !== id)
+    };
+    
+    // Update local state
+    setLog(newLog);
+    
+    // Save to storage
+    saveCurrentState({
+      log: newLog
+    }, 'log');
   };
 
   return (
-    <CPRLogContext.Provider value={{ log, addEntry, updateEntry, deleteEntry }}>
+    <CPRLogContext.Provider value={{ log, addEntry, updateEntry, deleteEntry, clearAllEntries }}>
       {children}
     </CPRLogContext.Provider>
   );
