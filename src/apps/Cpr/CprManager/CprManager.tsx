@@ -4,7 +4,7 @@ import { useNotification } from '../Notifications';
 import { useCPRSettings } from '../CPRSettings';
 import { useCPRCounters } from './CPRCountersContext';
 import { useCPRStateReporter } from '../CprState/useCPRStateReporter';
-import { loadCurrentState, saveCurrentState } from '../CprState/storage';
+import { loadCurrentState, saveCurrentState, archiveCPRState, clearCurrentState } from '../CprState/storage';
 import Metronome from '../Metronome';
 import { CprManagerTimerSection } from './CprManagerTimerSection';
 import { CprManagerActionSection } from './CprManagerActionSection';
@@ -12,6 +12,7 @@ import { CprManagerSettingSection } from './CprManagerSettingSection';
 import './CprManager.css';
 
 const CprManager: React.FC = () => {
+  // State declarations
   const [elapsedTime, setElapsedTime] = useState(0);
   const [massagerTime, setMassagerTime] = useState(0);
   const [adrenalineTime, setAdrenalineTime] = useState(0);
@@ -30,8 +31,11 @@ const CprManager: React.FC = () => {
   const [shouldShowAdrenalineNotification, setShouldShowAdrenalineNotification] = useState(false);
   const [isRestoringState, setIsRestoringState] = useState(true);
 
+  // Refs
   const massagerNotificationShownRef = useRef(false);
   const adrenalineNotificationShownRef = useRef(false);
+
+  // Hooks
   const { showNotification } = useNotification();
   const { settings } = useCPRSettings();
   const {
@@ -44,6 +48,7 @@ const CprManager: React.FC = () => {
     endCpr
   } = useCPRCounters();
 
+  // Get CPR status for state reporter
   const getCPRStatus = () => {
     if (showDeathMessage) return 'DEATH';
     if (showSuccessMessage) return 'ROSC';
@@ -51,6 +56,7 @@ const CprManager: React.FC = () => {
     return null;
   };
 
+  // Use CPR state reporter
   useCPRStateReporter(
     {
       isRunning,
@@ -74,12 +80,22 @@ const CprManager: React.FC = () => {
     }
   );
 
+  // Initialize state from localStorage on mount
   useEffect(() => {
-    if (isRestoringState) {
-      setIsRestoringState(false);
+    const savedState = loadCurrentState();
+    if (savedState?.endState) {
+      if (savedState.endState.status === 'DEATH') {
+        setShowDeathMessage(true);
+        setDeathTime(savedState.endState.endTime || '');
+      } else if (savedState.endState.status === 'ROSC') {
+        setShowSuccessMessage(true);
+        setSuccessTime(savedState.endState.endTime || '');
+      }
     }
-  }, [isRestoringState]);
+    setIsRestoringState(false);
+  }, []);
 
+  // Sound toggle handler
   const handleSoundToggle = (value: boolean) => {
     setIsSoundOn(value);
     saveCurrentState({
@@ -89,6 +105,7 @@ const CprManager: React.FC = () => {
     }, 'cprManagerSettings');
   };
 
+  // Timer reset handler
   const resetTimers = useCallback(() => {
     if (settings.massagerAlertEnabled) {
       setMassagerTime(settings.massagerAlertSeconds);
@@ -98,6 +115,7 @@ const CprManager: React.FC = () => {
     }
   }, [settings]);
 
+  // Notification handlers
   const handleMassagerNotificationResponse = useCallback(() => {
     setMassagerTime(settings.massagerAlertSeconds);
     massagerNotificationShownRef.current = false;
@@ -114,6 +132,7 @@ const CprManager: React.FC = () => {
     adrenalineNotificationShownRef.current = false;
   }, [settings.adrenalineAlertSeconds]);
 
+  // Timer effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isRunning && !isRestoringState) {
@@ -150,6 +169,7 @@ const CprManager: React.FC = () => {
     return () => clearInterval(interval);
   }, [isRunning, settings, isRestoringState]);
 
+  // Notification effects
   useEffect(() => {
     if (shouldShowMassagerNotification && !massagerNotificationShownRef.current) {
       massagerNotificationShownRef.current = true;
@@ -188,6 +208,7 @@ const CprManager: React.FC = () => {
     }
   }, [shouldShowAdrenalineNotification, handleAdrenalineGiven, handleAdrenalineSkipped, showNotification]);
 
+  // Timer display helper
   const getDisplayTimer = (): number => {
     if (settings.timerDisplay === 'massager' && settings.massagerAlertEnabled) {
       return massagerTime;
@@ -197,7 +218,10 @@ const CprManager: React.FC = () => {
     return 0;
   };
 
+  // Reset handler
   const resetAll = () => {
+    archiveCPRState();
+    clearCurrentState();
     setElapsedTime(0);
     setMassagerTime(0);
     setAdrenalineTime(0);
@@ -209,6 +233,7 @@ const CprManager: React.FC = () => {
     adrenalineNotificationShownRef.current = false;
   };
 
+  // CPR action handlers
   const handleStartCpr = () => {
     startCpr();
     resetTimers();
@@ -227,11 +252,25 @@ const CprManager: React.FC = () => {
   };
 
   const handleConfirmDeath = () => {
+    const currentTime = new Date().toLocaleTimeString('he-IL', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
     endCpr('DEATH');
     massagerNotificationShownRef.current = false;
     adrenalineNotificationShownRef.current = false;
     setShowDeathMessage(true);
     setShowDeathModal(false);
+    setDeathTime(currentTime);
+    
+    // Save the end state
+    saveCurrentState({
+      endState: {
+        status: 'DEATH',
+        endTime: currentTime
+      }
+    }, 'endState');
   };
 
   const handleROSCButtonClick = () => {
@@ -250,6 +289,14 @@ const CprManager: React.FC = () => {
     adrenalineNotificationShownRef.current = false;
     setShowSuccessMessage(true);
     setShowROSCModal(false);
+    
+    // Save the end state
+    saveCurrentState({
+      endState: {
+        status: 'ROSC',
+        endTime: currentTime
+      }
+    }, 'endState');
   };
 
   return (

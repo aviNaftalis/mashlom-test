@@ -46,10 +46,10 @@ export const clearCurrentState = (): void => {
   localStorage.removeItem(CURRENT_CPR_KEY);
 };
 
-export const archiveCPRState = (state: CPRState): void => {
+export const archiveCPRState = (): void => {
   try {
     const archives = JSON.parse(localStorage.getItem(ARCHIVED_CPRS_KEY) || '[]');
-    const updatedArchives = [state, ...archives].slice(0, MAX_ARCHIVED_CPRS);
+    const updatedArchives = [loadCurrentState(), ...archives].slice(0, MAX_ARCHIVED_CPRS);
     localStorage.setItem(ARCHIVED_CPRS_KEY, JSON.stringify(updatedArchives));
   } catch (error) {
     console.error('Error archiving CPR state:', error);

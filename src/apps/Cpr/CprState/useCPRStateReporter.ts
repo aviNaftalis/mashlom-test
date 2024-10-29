@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { CPRState } from './types';
-import { saveCurrentState, clearCurrentState, archiveCPRState, loadCurrentState } from './storage';
+import { saveCurrentState, loadCurrentState } from './storage';
 
 interface InitialStateCallbacks {
   setElapsedTime: (time: number) => void;
@@ -81,11 +81,7 @@ export const useCPRStateReporter = (
       }
     };
 
-    if (status === 'DEATH' || status === 'ROSC') {
-      // Archive the final state when CPR ends
-      archiveCPRState(currentState);
-      clearCurrentState();
-    } else {
+    if (status !== 'DEATH' && status !== 'ROSC') {
       // Save current state during active CPR
       saveCurrentState(currentState);
     }
