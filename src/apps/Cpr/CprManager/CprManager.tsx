@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { faRepeat, faSyringe } from '@fortawesome/free-solid-svg-icons';
-import { useNotification } from './Notifications';
-import { useCPRSettings } from './CPRSettings';
-import { useCPRCounters } from './CprManager/CPRCountersContext';
-import Metronome from './Metronome';
-import { CprManagerTimerSection } from './CprManager/CprManagerTimerSection';
-import { CprManagerActionSection } from './CprManager/CprManagerActionSection';
-import { CprManagerSettingSection } from './CprManager/CprManagerSettingSection';
+import { useNotification } from '../Notifications';
+import { useCPRSettings } from '../CPRSettings';
+import { useCPRCounters } from './CPRCountersContext';
+import Metronome from '../Metronome';
+import { CprManagerTimerSection } from './CprManagerTimerSection';
+import { CprManagerActionSection } from './CprManagerActionSection';
+import { CprManagerSettingSection } from './CprManagerSettingSection';
 import './CprManager.css';
 
 const CprManager: React.FC = () => {
