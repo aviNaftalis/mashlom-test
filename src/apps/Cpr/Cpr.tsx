@@ -38,7 +38,7 @@ interface EmergencyProtocols {
 
 const CprContent: React.FC = () => {
   const { addEntry } = useCPRLog();
-  const { updateContext } = useResusContext();
+  const { updateContext, protocol } = useResusContext();
   const [logExpanded, setLogExpanded] = useState(false);
   const [vitalSignsExpanded, setVitalSignsExpanded] = useState(false);
   const [medsExpanded, setMedsExpanded] = useState(false);
@@ -111,12 +111,14 @@ const CprContent: React.FC = () => {
 
     if (protocol) {
       const protocolName = getProtocolName(protocol);
-      addEntry({
-        timestamp: new Date().toISOString(),
-        text: `הגיע בעקבות ${protocolName}`,
-        type: 'patientDetails',
-        isImportant: false
-      });
+      if (protocolName) {
+        addEntry({
+          timestamp: new Date().toISOString(),
+          text: `הגיע בעקבות ${protocolName}`,
+          type: 'patientDetails',
+          isImportant: false
+        });
+      }
     }
 
     setAirwaysExpanded(true);
@@ -140,6 +142,15 @@ const CprContent: React.FC = () => {
 
   return (
     <>
+      <div style={{
+        display: 'flex',
+        alignItems: 'baseline',
+        gap: '10px',
+        justifyContent: 'center' // Add this to center the title
+      }}>
+        <h1 style={{ margin: 0 }}>החייאה</h1>
+        {protocol && <h5 style={{ margin: 0 }}>({getProtocolName(protocol)})</h5>}
+      </div>
       <CprManager />
       <ResusInputs onSubmit={handleResusInputsSubmit} />
       <div style={{ direction: 'rtl'}}>
@@ -229,7 +240,6 @@ const Cpr: React.FC = () => {
             <div>
               <div className="container main-content">
                 <div className="group-container">
-                  <h1>החייאה</h1>
                   <CprContent />
                 </div>
               </div>

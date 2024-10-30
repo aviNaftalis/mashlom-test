@@ -37,70 +37,67 @@ const CprManager: React.FC = () => {
 
   // Timer effect with fixed timing
   useEffect(() => {
-    let requestId: number;
-    
-    const tick = () => {
-      const now = Date.now();
-      const elapsed = now - lastTickTimeRef.current;
-      
-      if (elapsed >= 1000) {
-        dispatch({ type: 'TICK' });
-        lastTickTimeRef.current = now - (elapsed % 1000);
-
-        if (settings.massagerAlertEnabled && state.massagerTime === 0 && !massagerNotificationShownRef.current) {
-          massagerNotificationShownRef.current = true;
-          showNotification({
-            icon: faRepeat,
-            text: "החלף מעסים ובדוק דופק",
-            buttons: [{ 
-              text: "בוצע", 
-              onClick: () => {
-                dispatch({ type: 'SET_MASSAGER_TIME', time: settings.massagerAlertSeconds });
-                massagerNotificationShownRef.current = false;
-              }
-            }],
-          });
-        }
-
-        if (settings.adrenalineAlertEnabled && state.adrenalineTime === 0 && !adrenalineNotificationShownRef.current) {
-          adrenalineNotificationShownRef.current = true;
-          showNotification({
-            icon: faSyringe,
-            text: "נא לשקול מתן אדרנלין",
-            buttons: [
-              {
-                text: "ניתן",
-                onClick: () => {
-                  dispatch({ type: 'INCREMENT_ADRENALINE' });
-                  dispatch({ type: 'SET_ADRENALINE_TIME', time: settings.adrenalineAlertSeconds });
-                  adrenalineNotificationShownRef.current = false;
-                }
-              },
-              {
-                text: "אין צורך",
-                onClick: () => {
-                  dispatch({ type: 'SET_ADRENALINE_TIME', time: settings.adrenalineAlertSeconds });
-                  adrenalineNotificationShownRef.current = false;
-                }
-              }
-            ],
-          });
-        }
-      }
-      
-      if (state.isRunning) {
-        requestId = requestAnimationFrame(tick);
-      }
-    };
+    let intervalId: NodeJS.Timeout;
 
     if (state.isRunning) {
+      // Check every 200ms (5 times per second) instead of ~60 times
+      intervalId = setInterval(() => {
+        const now = Date.now();
+        const elapsed = now - lastTickTimeRef.current;
+
+        if (elapsed >= 1000) {
+          dispatch({ type: 'TICK' });
+          lastTickTimeRef.current = now - (elapsed % 1000);
+
+          // Notification checks
+          if (settings.massagerAlertEnabled && state.massagerTime === 0 && !massagerNotificationShownRef.current) {
+            massagerNotificationShownRef.current = true;
+            showNotification({
+              icon: faRepeat,
+              text: "החלף מעסים ובדוק דופק",
+              buttons: [{
+                text: "בוצע",
+                onClick: () => {
+                  dispatch({ type: 'SET_MASSAGER_TIME', time: settings.massagerAlertSeconds });
+                  massagerNotificationShownRef.current = false;
+                }
+              }],
+            });
+          }
+
+          if (settings.adrenalineAlertEnabled && state.adrenalineTime === 0 && !adrenalineNotificationShownRef.current) {
+            adrenalineNotificationShownRef.current = true;
+            showNotification({
+              icon: faSyringe,
+              text: "נא לשקול מתן אדרנלין",
+              buttons: [
+                {
+                  text: "ניתן",
+                  onClick: () => {
+                    dispatch({ type: 'INCREMENT_ADRENALINE' });
+                    dispatch({ type: 'SET_ADRENALINE_TIME', time: settings.adrenalineAlertSeconds });
+                    adrenalineNotificationShownRef.current = false;
+                  }
+                },
+                {
+                  text: "אין צורך",
+                  onClick: () => {
+                    dispatch({ type: 'SET_ADRENALINE_TIME', time: settings.adrenalineAlertSeconds });
+                    adrenalineNotificationShownRef.current = false;
+                  }
+                }
+              ],
+            });
+          }
+        }
+      }, 200); // Check 5 times per second
+
       lastTickTimeRef.current = Date.now();
-      requestId = requestAnimationFrame(tick);
     }
 
     return () => {
-      if (requestId) {
-        cancelAnimationFrame(requestId);
+      if (intervalId) {
+        clearInterval(intervalId);
       }
     };
   }, [state.isRunning, state.massagerTime, state.adrenalineTime, settings, dispatch, showNotification]);
