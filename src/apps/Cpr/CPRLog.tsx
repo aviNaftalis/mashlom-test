@@ -1,4 +1,4 @@
-import React, { useState, createContext, useContext, ReactNode } from 'react';
+import React, { useState, createContext, useContext, ReactNode, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faEdit, faCirclePlus } from '@fortawesome/free-solid-svg-icons';
@@ -6,6 +6,7 @@ import Image from '../../components/Image';
 import EntryDialog from './EntryDialog';
 import ExportButton from './CPRLogPDF';
 import { loadCurrentState, saveCurrentState } from './CprState/storage';
+import { cprEventEmitter, EVENTS } from './cprEvents';
 import './CPRLog.css';
 
 export interface LogEntry {
@@ -37,6 +38,13 @@ export const CPRLogProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const savedState = loadCurrentState();
     return savedState?.log || { patientId: '', entries: [] };
   });
+
+  useEffect(() => {
+    const unsubscribe = cprEventEmitter.subscribe(EVENTS.RESET_CPR, () => {
+      clearAllEntries();
+    });
+    return () => unsubscribe();
+  }, []);
 
   const addEntry = (entry: Omit<LogEntry, 'id'>) => {
     const newEntry = { ...entry, id: Date.now().toString() };

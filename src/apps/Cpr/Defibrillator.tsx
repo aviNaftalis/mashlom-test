@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useResusContext } from '../Resus/ResusContext';
 import { useCPRLog } from './CPRLog';
 import { useCPRCounters } from './CprManager/CPRCountersContext';
 import { loadCurrentState, saveCurrentState } from './CprState/storage';
 import resusDrugsDefinitions from '../Resus/data/resus-drugs-definitions.json';
+import { cprEventEmitter, EVENTS } from './cprEvents';
 
 interface DefiAction {
   name: string;
@@ -11,14 +12,21 @@ interface DefiAction {
 }
 
 const Defibrillator: React.FC = () => {
-  const { weight } = useResusContext();
-  const { addEntry } = useCPRLog();
-  const { incrementShock } = useCPRCounters();
-  const [lastUsedTimes, setLastUsedTimes] = useState<{ [key: string]: string }>(() => {
-    // Initialize state from storage or default values
-    const savedState = loadCurrentState();
-    return savedState?.defibrillator?.lastUsedTimes || {};
-  });
+    const { weight } = useResusContext();
+    const { addEntry } = useCPRLog();
+    const { incrementShock } = useCPRCounters();
+    const [lastUsedTimes, setLastUsedTimes] = useState<{ [key: string]: string }>(() => {
+      const savedState = loadCurrentState();
+      return savedState?.defibrillator?.lastUsedTimes || {};
+    });
+  
+    useEffect(() => {
+      const unsubscribe = cprEventEmitter.subscribe(EVENTS.RESET_CPR, () => {
+        setLastUsedTimes({});
+      });
+  
+      return () => unsubscribe();
+    }, []);
   
   const getDefi = (multiplier: number): number => {
     return weight ? Math.min(multiplier * weight, 200) : 0;

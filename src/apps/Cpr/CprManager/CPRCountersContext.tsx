@@ -76,7 +76,13 @@ export const CPRCountersProvider: React.FC<CPRCountersProviderProps> = ({ childr
     setIsRunning(true);
     setAdrenalineCount(0);
     setShockCount(0);
-  }, []);
+    addEntry({
+      timestamp: new Date().toISOString(),
+      text: "החייאה התחילה",
+      type: 'action',
+      isImportant: true
+    });
+  }, [addEntry]);
 
   const endCpr = useCallback((reason: 'ROSC' | 'DEATH') => {
     setIsRunning(false);

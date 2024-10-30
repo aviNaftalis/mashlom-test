@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { useCPRLog } from './CPRLog';
 import { loadCurrentState, saveCurrentState } from './CprState/storage';
+import { cprEventEmitter, EVENTS } from './cprEvents';
 import './VitalSigns.css';
 
 interface VitalSigns {
@@ -15,23 +16,33 @@ interface VitalSigns {
   temperature: string;
 }
 
+const initialVitalSigns: VitalSigns = {
+  timestamp: '',
+  heartRate: '',
+  bloodPressure: '',
+  saturation: '',
+  etco2: '',
+  glucose: '',
+  temperature: '',
+};
+
 const VitalSigns: React.FC = () => {
   const { addEntry } = useCPRLog();
   const [vitalSigns, setVitalSigns] = useState<VitalSigns[]>(() => {
-    // Initialize from storage or empty array
     const savedState = loadCurrentState();
     return savedState?.vitalSigns?.signs || [];
   });
   
-  const [currentVitalSigns, setCurrentVitalSigns] = useState<VitalSigns>({
-    timestamp: '',
-    heartRate: '',
-    bloodPressure: '',
-    saturation: '',
-    etco2: '',
-    glucose: '',
-    temperature: '',
-  });
+  const [currentVitalSigns, setCurrentVitalSigns] = useState<VitalSigns>(initialVitalSigns);
+
+  useEffect(() => {
+    const unsubscribe = cprEventEmitter.subscribe(EVENTS.RESET_CPR, () => {
+      setVitalSigns([]);
+      setCurrentVitalSigns(initialVitalSigns);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

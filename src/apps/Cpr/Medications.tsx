@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 import { useResusContext } from '../Resus/ResusContext';
@@ -7,6 +7,7 @@ import emergencyProtocols from '../Resus/data/emergency-protocols.json';
 import DrugComponent from '../Resus/Drug';
 import { useCPRLog } from './CPRLog';
 import { loadCurrentState, saveCurrentState } from './CprState/storage';
+import { cprEventEmitter, EVENTS } from './cprEvents';
 import './Medications.css';
 
 interface Drug {
@@ -173,15 +174,22 @@ const MedicationsTable: React.FC<{
 };
 
 const Medications: React.FC = () => {
-  const { protocol } = useResusContext();
-  const drugsData = drugsDataFile as MedicationGuide;
-  const protocols = emergencyProtocols as EmergencyProtocolsData;
-
-  // Initialize givenDrugs state from storage
-  const [givenDrugs, setGivenDrugs] = useState<Record<string, boolean>>(() => {
-    const savedState = loadCurrentState();
-    return savedState?.medications?.givenDrugs || {};
-  });
+    const { protocol } = useResusContext();
+    const drugsData = drugsDataFile as MedicationGuide;
+    const protocols = emergencyProtocols as EmergencyProtocolsData;
+  
+    const [givenDrugs, setGivenDrugs] = useState<Record<string, boolean>>(() => {
+      const savedState = loadCurrentState();
+      return savedState?.medications?.givenDrugs || {};
+    });
+  
+    useEffect(() => {
+      const unsubscribe = cprEventEmitter.subscribe(EVENTS.RESET_CPR, () => {
+        setGivenDrugs({});
+      });
+  
+      return () => unsubscribe();
+    }, []);
 
   // Get Resus Drugs
   const resusSection = drugsData.sections.find(section => section.name === "Resus Drugs");

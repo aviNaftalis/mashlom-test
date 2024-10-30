@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCPRLog } from './CPRLog';
 import { loadCurrentState, saveCurrentState } from './CprState/storage';
+import { cprEventEmitter, EVENTS } from './cprEvents';
 import './MedicalProcedures.css';
 
 interface ProcedureLog {
@@ -10,10 +11,17 @@ interface ProcedureLog {
 const MedicalProcedures: React.FC = () => {
   const { addEntry } = useCPRLog();
   const [lastPerformed, setLastPerformed] = useState<ProcedureLog>(() => {
-    // Initialize from storage or empty object
     const savedState = loadCurrentState();
     return savedState?.procedures?.lastPerformed || {};
   });
+
+  useEffect(() => {
+    const unsubscribe = cprEventEmitter.subscribe(EVENTS.RESET_CPR, () => {
+      setLastPerformed({});
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const procedures = [
     { id: 'catheter', label: 'קטטר שתן', logText: 'חובר קטטר שתן'},

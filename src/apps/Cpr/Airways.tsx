@@ -4,6 +4,8 @@ import airwaysData from '../Resus/data/airways.json';
 import { useResusContext } from '../Resus/ResusContext';
 import { loadCurrentState, saveCurrentState } from './CprState/storage';
 import AirwaysRecommendedValues from './AirwaysRecommendedValues';
+import { cprEventEmitter, EVENTS } from './cprEvents';
+
 import './Airways.css';
 
 interface AirwaysData {
@@ -14,6 +16,15 @@ interface AirwaysData {
   chestDrainSize: string;
   hasSurgicalAirway: boolean;
 }
+
+const initialData: AirwaysData = {
+    airwayType: null,
+    airwaySize: '',
+    hasAmbu: false,
+    hasChestDrain: false,
+    chestDrainSize: '',
+    hasSurgicalAirway: false
+  };
 
 interface RecommendedValues {
   blade: number;
@@ -29,14 +40,7 @@ const Airways: React.FC = () => {
   const [data, setData] = useState<AirwaysData>(() => {
     // Initialize state from storage or default values
     const savedState = loadCurrentState();
-    return savedState?.airways || {
-      airwayType: null,
-      airwaySize: '',
-      hasAmbu: false,
-      hasChestDrain: false,
-      chestDrainSize: '',
-      hasSurgicalAirway: false
-    };
+    return savedState?.airways || initialData;
   });
 
   // Get recommended values when age changes
@@ -48,6 +52,14 @@ const Airways: React.FC = () => {
       }
     }
   }, [age]);
+
+  useEffect(() => {
+    const unsubscribe = cprEventEmitter.subscribe(EVENTS.RESET_CPR, () => {
+      setData(initialData);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Get chest tube size range based on weight
   const getChestTubeSize = (weight: number): string => {

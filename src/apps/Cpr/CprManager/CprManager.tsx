@@ -9,6 +9,7 @@ import Metronome from '../Metronome';
 import { CprManagerTimerSection } from './CprManagerTimerSection';
 import { CprManagerActionSection } from './CprManagerActionSection';
 import { CprManagerSettingSection } from './CprManagerSettingSection';
+import { cprEventEmitter, EVENTS } from '../cprEvents';
 import './CprManager.css';
 
 const CprManager: React.FC = () => {
@@ -220,8 +221,8 @@ const CprManager: React.FC = () => {
 
   // Reset handler
   const resetAll = () => {
-    archiveCPRState();
     clearCurrentState();
+    archiveCPRState();    
     setElapsedTime(0);
     setMassagerTime(0);
     setAdrenalineTime(0);
@@ -231,6 +232,7 @@ const CprManager: React.FC = () => {
     setSuccessTime('');
     massagerNotificationShownRef.current = false;
     adrenalineNotificationShownRef.current = false;
+    cprEventEmitter.emit(EVENTS.RESET_CPR);
   };
 
   // CPR action handlers
