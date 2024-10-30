@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { faRepeat, faSyringe } from '@fortawesome/free-solid-svg-icons';
 import { useNotification } from '../Notifications';
 import { useCPRSettings } from '../CPRSettings';
-import { useCPRCounters } from './CPRCountersContext';
-import { useCPRStateReporter } from '../CprState/useCPRStateReporter';
-import { loadCurrentState, saveCurrentState, archiveCPRState, clearCurrentState } from '../CprState/storage';
+import { useCPRState } from '../CprState/CPRStateContext';
+import { clearCurrentState, archiveCPRState } from '../CprState/storage';
+import { useCPRLog } from '../CPRLog';
 import Metronome from '../Metronome';
 import { CprManagerTimerSection } from './CprManagerTimerSection';
 import { CprManagerActionSection } from './CprManagerActionSection';
@@ -13,243 +13,148 @@ import { cprEventEmitter, EVENTS } from '../cprEvents';
 import './CprManager.css';
 
 const CprManager: React.FC = () => {
-  // State declarations
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [massagerTime, setMassagerTime] = useState(0);
-  const [adrenalineTime, setAdrenalineTime] = useState(0);
+  const { state, dispatch } = useCPRState();
+  const { showNotification } = useNotification();
+  const { settings } = useCPRSettings();
+  const { addEntry } = useCPRLog();
+  
   const [isSoundOn, setIsSoundOn] = useState(() => {
-    const savedState = loadCurrentState();
-    return savedState?.cprManagerSettings?.isSoundOn ?? true;
+    const savedState = localStorage.getItem('cprManagerSettings');
+    return savedState ? JSON.parse(savedState).isSoundOn : true;
   });
   const [showDeathModal, setShowDeathModal] = useState(false);
   const [showROSCModal, setShowROSCModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [deathTime, setDeathTime] = useState('');
-  const [showDeathMessage, setShowDeathMessage] = useState(false);
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-  const [successTime, setSuccessTime] = useState('');
-  const [shouldShowMassagerNotification, setShouldShowMassagerNotification] = useState(false);
-  const [shouldShowAdrenalineNotification, setShouldShowAdrenalineNotification] = useState(false);
-  const [isRestoringState, setIsRestoringState] = useState(true);
 
-  // Refs
   const massagerNotificationShownRef = useRef(false);
   const adrenalineNotificationShownRef = useRef(false);
+  const lastTickTimeRef = useRef<number>(Date.now());
 
-  // Hooks
-  const { showNotification } = useNotification();
-  const { settings } = useCPRSettings();
-  const {
-    adrenalineCount,
-    shockCount,
-    isRunning,
-    incrementAdrenaline,
-    incrementShock,
-    startCpr,
-    endCpr
-  } = useCPRCounters();
-
-  // Get CPR status for state reporter
-  const getCPRStatus = () => {
-    if (showDeathMessage) return 'DEATH';
-    if (showSuccessMessage) return 'ROSC';
-    if (isRunning) return 'ACTIVE';
-    return null;
-  };
-
-  // Use CPR state reporter
-  useCPRStateReporter(
-    {
-      isRunning,
-      elapsedTime,
-      massagerTime,
-      adrenalineTime,
-      adrenalineCount,
-      shockCount,
-      status: getCPRStatus(),
-      endTime: showDeathMessage ? deathTime : showSuccessMessage ? successTime : null
-    },
-    {
-      setElapsedTime,
-      setMassagerTime,
-      setAdrenalineTime,
-      startCpr,
-      setShowDeathMessage,
-      setShowSuccessMessage,
-      setDeathTime,
-      setSuccessTime
-    }
-  );
-
-  // Initialize state from localStorage on mount
-  useEffect(() => {
-    const savedState = loadCurrentState();
-    if (savedState?.endState) {
-      if (savedState.endState.status === 'DEATH') {
-        setShowDeathMessage(true);
-        setDeathTime(savedState.endState.endTime || '');
-      } else if (savedState.endState.status === 'ROSC') {
-        setShowSuccessMessage(true);
-        setSuccessTime(savedState.endState.endTime || '');
-      }
-    }
-    setIsRestoringState(false);
-  }, []);
-
-  // Sound toggle handler
   const handleSoundToggle = (value: boolean) => {
     setIsSoundOn(value);
-    saveCurrentState({
-      cprManagerSettings: {
-        isSoundOn: value
-      }
-    }, 'cprManagerSettings');
+    localStorage.setItem('cprManagerSettings', JSON.stringify({ isSoundOn: value }));
   };
 
-  // Timer reset handler
+  // Timer effect with fixed timing
+  useEffect(() => {
+    let requestId: number;
+    
+    const tick = () => {
+      const now = Date.now();
+      const elapsed = now - lastTickTimeRef.current;
+      
+      if (elapsed >= 1000) {
+        dispatch({ type: 'TICK' });
+        lastTickTimeRef.current = now - (elapsed % 1000);
+
+        if (settings.massagerAlertEnabled && state.massagerTime === 0 && !massagerNotificationShownRef.current) {
+          massagerNotificationShownRef.current = true;
+          showNotification({
+            icon: faRepeat,
+            text: "החלף מעסים ובדוק דופק",
+            buttons: [{ 
+              text: "בוצע", 
+              onClick: () => {
+                dispatch({ type: 'SET_MASSAGER_TIME', time: settings.massagerAlertSeconds });
+                massagerNotificationShownRef.current = false;
+              }
+            }],
+          });
+        }
+
+        if (settings.adrenalineAlertEnabled && state.adrenalineTime === 0 && !adrenalineNotificationShownRef.current) {
+          adrenalineNotificationShownRef.current = true;
+          showNotification({
+            icon: faSyringe,
+            text: "נא לשקול מתן אדרנלין",
+            buttons: [
+              {
+                text: "ניתן",
+                onClick: () => {
+                  dispatch({ type: 'INCREMENT_ADRENALINE' });
+                  dispatch({ type: 'SET_ADRENALINE_TIME', time: settings.adrenalineAlertSeconds });
+                  adrenalineNotificationShownRef.current = false;
+                }
+              },
+              {
+                text: "אין צורך",
+                onClick: () => {
+                  dispatch({ type: 'SET_ADRENALINE_TIME', time: settings.adrenalineAlertSeconds });
+                  adrenalineNotificationShownRef.current = false;
+                }
+              }
+            ],
+          });
+        }
+      }
+      
+      if (state.isRunning) {
+        requestId = requestAnimationFrame(tick);
+      }
+    };
+
+    if (state.isRunning) {
+      lastTickTimeRef.current = Date.now();
+      requestId = requestAnimationFrame(tick);
+    }
+
+    return () => {
+      if (requestId) {
+        cancelAnimationFrame(requestId);
+      }
+    };
+  }, [state.isRunning, state.massagerTime, state.adrenalineTime, settings, dispatch, showNotification]);
+
   const resetTimers = useCallback(() => {
     if (settings.massagerAlertEnabled) {
-      setMassagerTime(settings.massagerAlertSeconds);
+      dispatch({ type: 'SET_MASSAGER_TIME', time: settings.massagerAlertSeconds });
     }
     if (settings.adrenalineAlertEnabled) {
-      setAdrenalineTime(settings.adrenalineAlertSeconds);
+      dispatch({ type: 'SET_ADRENALINE_TIME', time: settings.adrenalineAlertSeconds });
     }
-  }, [settings]);
+  }, [settings, dispatch]);
 
-  // Notification handlers
-  const handleMassagerNotificationResponse = useCallback(() => {
-    setMassagerTime(settings.massagerAlertSeconds);
-    massagerNotificationShownRef.current = false;
-  }, [settings.massagerAlertSeconds]);
-
-  const handleAdrenalineGiven = useCallback(() => {
-    incrementAdrenaline();
-    setAdrenalineTime(settings.adrenalineAlertSeconds);
-    adrenalineNotificationShownRef.current = false;
-  }, [incrementAdrenaline, settings.adrenalineAlertSeconds]);
-
-  const handleAdrenalineSkipped = useCallback(() => {
-    setAdrenalineTime(settings.adrenalineAlertSeconds);
-    adrenalineNotificationShownRef.current = false;
-  }, [settings.adrenalineAlertSeconds]);
-
-  // Timer effect
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isRunning && !isRestoringState) {
-      interval = setInterval(() => {
-        setElapsedTime(prevTime => prevTime + 1);
-        
-        if (settings.massagerAlertEnabled) {
-          setMassagerTime(prevTime => {
-            if (prevTime > 0) {
-              return prevTime - 1;
-            } else {
-              if (!massagerNotificationShownRef.current) {
-                setShouldShowMassagerNotification(true);
-              }
-              return 0;
-            }
-          });
-        }
-
-        if (settings.adrenalineAlertEnabled) {
-          setAdrenalineTime(prevTime => {
-            if (prevTime > 0) {
-              return prevTime - 1;
-            } else {
-              if (!adrenalineNotificationShownRef.current) {
-                setShouldShowAdrenalineNotification(true);
-              }
-              return 0;
-            }
-          });
-        }
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isRunning, settings, isRestoringState]);
-
-  // Notification effects
-  useEffect(() => {
-    if (shouldShowMassagerNotification && !massagerNotificationShownRef.current) {
-      massagerNotificationShownRef.current = true;
-      showNotification({
-        icon: faRepeat,
-        text: "החלף מעסים ובדוק דופק",
-        buttons: [
-          { 
-            text: "בוצע", 
-            onClick: handleMassagerNotificationResponse
-          }
-        ],
-      });
-      setShouldShowMassagerNotification(false);
-    }
-  }, [shouldShowMassagerNotification, handleMassagerNotificationResponse, showNotification]);
-
-  useEffect(() => {
-    if (shouldShowAdrenalineNotification && !adrenalineNotificationShownRef.current) {
-      adrenalineNotificationShownRef.current = true;
-      showNotification({
-        icon: faSyringe,
-        text: "נא לשקול מתן אדרנלין",
-        buttons: [
-          {
-            text: "ניתן",
-            onClick: handleAdrenalineGiven
-          },
-          {
-            text: "אין צורך",
-            onClick: handleAdrenalineSkipped
-          }
-        ],
-      });
-      setShouldShowAdrenalineNotification(false);
-    }
-  }, [shouldShowAdrenalineNotification, handleAdrenalineGiven, handleAdrenalineSkipped, showNotification]);
-
-  // Timer display helper
   const getDisplayTimer = (): number => {
     if (settings.timerDisplay === 'massager' && settings.massagerAlertEnabled) {
-      return massagerTime;
+      return state.massagerTime;
     } else if (settings.timerDisplay === 'adrenaline' && settings.adrenalineAlertEnabled) {
-      return adrenalineTime;
+      return state.adrenalineTime;
     }
     return 0;
   };
 
-  // Reset handler
   const resetAll = () => {
     clearCurrentState();
-    archiveCPRState();    
-    setElapsedTime(0);
-    setMassagerTime(0);
-    setAdrenalineTime(0);
-    setShowDeathMessage(false);
-    setShowSuccessMessage(false);
-    setDeathTime('');
-    setSuccessTime('');
+    archiveCPRState();
+    dispatch({ type: 'LOAD_STATE', state: {
+      isRunning: false,
+      elapsedTime: 0,
+      massagerTime: 0,
+      adrenalineTime: 0,
+      adrenalineCount: 0,
+      shockCount: 0,
+      status: null,
+      endTime: null
+    }});
     massagerNotificationShownRef.current = false;
     adrenalineNotificationShownRef.current = false;
     cprEventEmitter.emit(EVENTS.RESET_CPR);
   };
 
-  // CPR action handlers
   const handleStartCpr = () => {
-    startCpr();
+    dispatch({ type: 'START_CPR' });
     resetTimers();
     massagerNotificationShownRef.current = false;
     adrenalineNotificationShownRef.current = false;
+    addEntry({
+      timestamp: new Date().toISOString(),
+      text: "החייאה התחילה",
+      type: 'action',
+      isImportant: true
+    });
   };
 
   const handleDeathButtonClick = () => {
-    const currentTime = new Date().toLocaleTimeString('he-IL', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
-    setDeathTime(currentTime);
     setShowDeathModal(true);
   };
 
@@ -259,20 +164,16 @@ const CprManager: React.FC = () => {
       minute: '2-digit',
       second: '2-digit'
     });
-    endCpr('DEATH');
+    dispatch({ type: 'END_CPR', status: 'DEATH', time: currentTime });
     massagerNotificationShownRef.current = false;
     adrenalineNotificationShownRef.current = false;
-    setShowDeathMessage(true);
     setShowDeathModal(false);
-    setDeathTime(currentTime);
-    
-    // Save the end state
-    saveCurrentState({
-      endState: {
-        status: 'DEATH',
-        endTime: currentTime
-      }
-    }, 'endState');
+    addEntry({
+      timestamp: new Date().toISOString(),
+      text: "נקבע מות המטופל",
+      type: 'action',
+      isImportant: true
+    });
   };
 
   const handleROSCButtonClick = () => {
@@ -285,41 +186,37 @@ const CprManager: React.FC = () => {
       minute: '2-digit',
       second: '2-digit'
     });
-    setSuccessTime(currentTime);
-    endCpr('ROSC');
+    dispatch({ type: 'END_CPR', status: 'ROSC', time: currentTime });
     massagerNotificationShownRef.current = false;
     adrenalineNotificationShownRef.current = false;
-    setShowSuccessMessage(true);
     setShowROSCModal(false);
-    
-    // Save the end state
-    saveCurrentState({
-      endState: {
-        status: 'ROSC',
-        endTime: currentTime
-      }
-    }, 'endState');
+    addEntry({
+      timestamp: new Date().toISOString(),
+      text: "ההחיאה הסתיימה בהצלחה",
+      type: 'action',
+      isImportant: true
+    });
   };
 
   return (
     <div className="cpr-manager-container">
       <CprManagerTimerSection
-        elapsedTime={elapsedTime}
+        elapsedTime={state.elapsedTime}
         displayTimer={getDisplayTimer()}
-        isRunning={isRunning}
-        adrenalineCount={adrenalineCount}
-        shockCount={shockCount}
+        isRunning={state.isRunning}
+        adrenalineCount={state.adrenalineCount}
+        shockCount={state.shockCount}
         timerDisplay={settings.timerDisplay}
-        onIncrementAdrenaline={incrementAdrenaline}
-        onIncrementShock={incrementShock}
+        onIncrementAdrenaline={() => dispatch({ type: 'INCREMENT_ADRENALINE' })}
+        onIncrementShock={() => dispatch({ type: 'INCREMENT_SHOCK' })}
       />
 
       <CprManagerActionSection
-        isRunning={isRunning}
-        showDeathMessage={showDeathMessage}
-        showSuccessMessage={showSuccessMessage}
-        deathTime={deathTime}
-        successTime={successTime}
+        isRunning={state.isRunning}
+        showDeathMessage={state.status === 'DEATH'}
+        showSuccessMessage={state.status === 'ROSC'}
+        deathTime={state.status === 'DEATH' ? state.endTime || '' : ''}
+        successTime={state.status === 'ROSC' ? state.endTime || '' : ''}
         showDeathModal={showDeathModal}
         showROSCModal={showROSCModal}
         onStartCpr={handleStartCpr}
@@ -340,7 +237,7 @@ const CprManager: React.FC = () => {
         onCloseSettings={() => setShowSettingsModal(false)}
       />
 
-      <Metronome isPlaying={isRunning && isSoundOn} bpm={100} />
+      <Metronome isPlaying={state.isRunning && isSoundOn} bpm={100} />
     </div>
   );
 };

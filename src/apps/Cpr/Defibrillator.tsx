@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useResusContext } from '../Resus/ResusContext';
 import { useCPRLog } from './CPRLog';
-import { useCPRCounters } from './CprManager/CPRCountersContext';
+import { useCPRState } from './CprState/CPRStateContext';
 import { loadCurrentState, saveCurrentState } from './CprState/storage';
 import resusDrugsDefinitions from '../Resus/data/resus-drugs-definitions.json';
 import { cprEventEmitter, EVENTS } from './cprEvents';
@@ -12,22 +12,22 @@ interface DefiAction {
 }
 
 const Defibrillator: React.FC = () => {
-    const { weight } = useResusContext();
-    const { addEntry } = useCPRLog();
-    const { incrementShock } = useCPRCounters();
-    const [lastUsedTimes, setLastUsedTimes] = useState<{ [key: string]: string }>(() => {
-      const savedState = loadCurrentState();
-      return savedState?.defibrillator?.lastUsedTimes || {};
+  const { weight } = useResusContext();
+  const { addEntry } = useCPRLog();
+  const { dispatch } = useCPRState();
+  const [lastUsedTimes, setLastUsedTimes] = useState<{ [key: string]: string }>(() => {
+    const savedState = loadCurrentState();
+    return savedState?.defibrillator?.lastUsedTimes || {};
+  });
+
+  useEffect(() => {
+    const unsubscribe = cprEventEmitter.subscribe(EVENTS.RESET_CPR, () => {
+      setLastUsedTimes({});
     });
-  
-    useEffect(() => {
-      const unsubscribe = cprEventEmitter.subscribe(EVENTS.RESET_CPR, () => {
-        setLastUsedTimes({});
-      });
-  
-      return () => unsubscribe();
-    }, []);
-  
+
+    return () => unsubscribe();
+  }, []);
+
   const getDefi = (multiplier: number): number => {
     return weight ? Math.min(multiplier * weight, 200) : 0;
   };
@@ -48,17 +48,14 @@ const Defibrillator: React.FC = () => {
       [defiAction.name]: currentTime
     };
 
-    // Update local state
     setLastUsedTimes(newLastUsedTimes);
-
-    // Save to storage
     saveCurrentState({
       defibrillator: {
         lastUsedTimes: newLastUsedTimes
       }
     }, 'defibrillator');
 
-    incrementShock();
+    dispatch({ type: 'INCREMENT_SHOCK' });
 
     addEntry({
       timestamp: new Date().toISOString(),
@@ -68,6 +65,7 @@ const Defibrillator: React.FC = () => {
     });
   };
 
+  // Rest of the component remains the same...
   return (
     <div style={{ marginTop: '15px', marginBottom: '15px' }}>
       <table style={{ 
