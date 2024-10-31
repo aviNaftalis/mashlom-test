@@ -6,6 +6,7 @@ import { useCPRState } from '../CprState/CPRStateContext';
 import { clearCurrentState, archiveCPRState } from '../CprState/storage';
 import { useCPRLog } from '../CPRLog';
 import Metronome from '../Metronome';
+import { useResusContext } from '../../Resus/ResusContext';
 import { CprManagerTimerSection } from './CprManagerTimerSection';
 import { CprManagerActionSection } from './CprManagerActionSection';
 import { CprManagerSettingSection } from './CprManagerSettingSection';
@@ -17,6 +18,7 @@ const CprManager: React.FC = () => {
   const { showNotification } = useNotification();
   const { settings } = useCPRSettings();
   const { addEntry } = useCPRLog();
+  const { resetContext } = useResusContext();
   
   const [isSoundOn, setIsSoundOn] = useState(() => {
     const savedState = localStorage.getItem('cprManagerSettings');
@@ -136,6 +138,7 @@ const CprManager: React.FC = () => {
     massagerNotificationShownRef.current = false;
     adrenalineNotificationShownRef.current = false;
     cprEventEmitter.emit(EVENTS.RESET_CPR);
+    resetContext();
   };
 
   const handleStartCpr = () => {
