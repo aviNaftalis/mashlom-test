@@ -5,7 +5,16 @@ import CprManager from './CprManager/CprManager';
 import { CPRStateProvider } from './CprState/CPRStateContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import CPRSettingsProvider from './CPRSettings';
-import { faFileLines, faHeartPulse, faSection, faPills, faListCheck, faLungs, faBoltLightning } from '@fortawesome/free-solid-svg-icons';
+import { 
+  faFileLines, 
+  faHeartPulse, 
+  faSection, 
+  faPills, 
+  faListCheck, 
+  faLungs, 
+  faBoltLightning,
+  faClockRotateLeft
+} from '@fortawesome/free-solid-svg-icons';
 import CPRLogComponent from './CPRLog';
 import VitalSigns from './VitalSigns';
 import MedicalProcedures from './MedicalProcedures';
@@ -16,25 +25,9 @@ import Defibrillator from './Defibrillator';
 import ReminderBox from './ReminderBox';
 import ResusInputs from '../Resus/ResusInputs';
 import { useResusContext } from '../Resus/ResusContext';
-import { loadCurrentState, saveCurrentState } from './CprState/storage';
-import emergencyProtocols from '../Resus/data/emergency-protocols.json';
+import { loadCurrentState, saveCurrentState, restoreArchivedCPR } from './CprState/storage';
+import ArchivesList, { getFormattedAge, getProtocolName } from './ArchivesList';
 import './Cpr.css';
-
-interface Protocol {
-  name: string;
-  id: string;
-  algorithmFile?: string;
-  protocolFile?: string;
-}
-
-interface ProtocolSection {
-  section: string;
-  protocols: Protocol[];
-}
-
-interface EmergencyProtocols {
-  emergencyProtocols: ProtocolSection[];
-}
 
 const CprContent: React.FC = () => {
   const { addEntry } = useCPRLog();
@@ -48,10 +41,23 @@ const CprContent: React.FC = () => {
   const [defibrillatorExpanded, setDefibrillatorExpanded] = useState(false);
   const [showReminder, setShowReminder] = useState(false);
   const [reminderShown, setReminderShown] = useState(false);
+  const [showArchives, setShowArchives] = useState(false);
   const hasRestoredState = useRef(false);
 
   useEffect(() => {
     if (!hasRestoredState.current) {
+      // Parse archive ID from hash params
+      const hash = window.location.hash;
+      const params = new URLSearchParams(hash.includes('?') ? hash.split('?')[1] : '');
+      const archiveId = params.get('archive');
+      
+      if (archiveId) {
+        const restored = restoreArchivedCPR(archiveId);
+        if (!restored) {
+          console.error('Failed to restore archived CPR');
+        }
+      }
+
       const savedState = loadCurrentState();
       if (savedState?.resusContext) {
         const { age, weight, protocol } = savedState.resusContext;
@@ -124,33 +130,22 @@ const CprContent: React.FC = () => {
     setAirwaysExpanded(true);
   };
 
-  const getFormattedAge = (age: string): string => {
-    if (age === "0 month") return "בן יומו";
-    if (age === "1 month") return "חודש";
-    if (age === "2 month") return "חודשיים";
-    if (age === "1 year") return "שנה";
-    if (age === "2 year") return "שנתיים";
-    return age.replace("month", "חודשים").replace("year", "שנים");
-  };
-
-  const getProtocolName = (protocolId: string): string => {
-    const protocol = (emergencyProtocols as EmergencyProtocols).emergencyProtocols
-      .flatMap((section): Protocol[] => section.protocols)
-      .find((p): p is Protocol => p.id === protocolId);
-    return protocol ? protocol.name : protocolId;
-  };
-
   return (
     <>
-      <div style={{
-        display: 'flex',
-        alignItems: 'baseline',
-        gap: '10px',
-        justifyContent: 'center' // Add this to center the title
-      }}>
-        <h1 style={{ margin: 0 }}>החייאה</h1>
-        {protocol && <h5 style={{ margin: 0 }}>({getProtocolName(protocol)})</h5>}
+      <div className="header-container">
+        <div className="header-title">
+          <h1>החייאה</h1>
+          {protocol && <h5>({getProtocolName(protocol)})</h5>}
+        </div>
+        <button 
+          onClick={() => setShowArchives(true)}
+          className="archive-button"
+          title="החייאות קודמות"
+        >
+          <FontAwesomeIcon icon={faClockRotateLeft} />
+        </button>
       </div>
+      {showArchives && <ArchivesList onClose={() => setShowArchives(false)} />}
       <CprManager />
       <ResusInputs onSubmit={handleResusInputsSubmit} />
       <div style={{ direction: 'rtl'}}>

@@ -123,8 +123,7 @@ const CprManager: React.FC = () => {
   };
 
   const resetAll = () => {
-    clearCurrentState();
-    archiveCPRState();
+    clearCurrentState();    
     dispatch({ type: 'LOAD_STATE', state: {
       isRunning: false,
       elapsedTime: 0,
@@ -174,6 +173,11 @@ const CprManager: React.FC = () => {
       type: 'action',
       isImportant: true
     });
+    setTimeout(() => {
+      // we call it within setTimeout, as by the time of the confirmation, the state may change
+      // (the ticks update the state every second)
+      archiveCPRState('death');
+    }, 1000);
   };
 
   const handleROSCButtonClick = () => {
@@ -196,6 +200,11 @@ const CprManager: React.FC = () => {
       type: 'action',
       isImportant: true
     });
+    setTimeout(() => {
+      // we call it within setTimeout, as by the time of the confirmation, the state may change
+      // (the ticks update the state every second)
+      archiveCPRState('ROSC');
+    }, 1000);
   };
 
   return (
