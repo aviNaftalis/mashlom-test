@@ -1,7 +1,7 @@
 import { CPRState, ArchivedCPR } from './types';
 
-const CURRENT_CPR_KEY = 'current_cpr_state';
-const ARCHIVED_CPRS_KEY = 'archived_cprs';
+const CURRENT_CPR_KEY = 'current_cpr_state_v1';
+const ARCHIVED_CPRS_KEY = 'archived_cprs_v1';
 const MAX_ARCHIVED_CPRS = 5;
 
 export const saveCurrentState = (state: Partial<CPRState>, section?: keyof CPRState): void => {
