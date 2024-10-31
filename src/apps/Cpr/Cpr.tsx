@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { NotificationProvider } from './Notifications';
 import { CPRLogProvider, useCPRLog } from './CPRLog';
 import CprManager from './CprManager/CprManager';
-import { CPRStateProvider } from './CprState/CPRStateContext';
+import { CPRStateProvider, useCPRState} from './CprState/CPRStateContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import CPRSettingsProvider from './CPRSettings';
 import { 
@@ -43,6 +43,7 @@ const CprContent: React.FC = () => {
   const [reminderShown, setReminderShown] = useState(false);
   const [showArchives, setShowArchives] = useState(false);
   const hasRestoredState = useRef(false);
+  const { state } = useCPRState();
 
   useEffect(() => {
     if (!hasRestoredState.current) {
@@ -137,13 +138,13 @@ const CprContent: React.FC = () => {
           <h1>החייאה</h1>
           {protocol && <h5>({getProtocolName(protocol)})</h5>}
         </div>
-        <button 
+        {!state.isRunning && (<button 
           onClick={() => setShowArchives(true)}
           className="archive-button"
           title="החייאות קודמות"
         >
           <FontAwesomeIcon icon={faClockRotateLeft} />
-        </button>
+        </button>)}
       </div>
       {showArchives && <ArchivesList onClose={() => setShowArchives(false)} />}
       <CprManager />
