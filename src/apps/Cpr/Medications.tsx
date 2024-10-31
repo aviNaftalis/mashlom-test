@@ -145,8 +145,8 @@ const MedicationsTable: React.FC<{
     <table className="medications-table">
       <thead>
         <tr>
-          <th className="header-title text-right">{title}</th>
-          <th className="header-action text-center">ניתן</th>
+          <th className="med-header-title text-right">{title}</th>
+          <th className="med-header-action text-center">ניתן</th>
         </tr>
       </thead>
       <tbody>

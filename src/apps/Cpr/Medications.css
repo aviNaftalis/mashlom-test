@@ -23,12 +23,12 @@
   border: 1px solid #6585A0;
 }
 
-.medications-table .header-title {
+.medications-table .med-header-title {
   text-align: right;
   width: 90%;
 }
 
-.medications-table .header-action {
+.medications-table .med-header-action {
   text-align: center;
   width: 10%;
 }
