@@ -29,9 +29,9 @@ export const hospitals: Record<string, HospitalConfig> = {
       {
         name: 'מלר"ד ילדים',
         apps:[
-          MashlomApps.CPR,
-          MashlomApps.TRIAGE,
-          MashlomApps.RESUS
+          MashlomApps.TRIAGE,                    
+          MashlomApps.RESUS,
+          MashlomApps.CPR
         ]
       }
     ],
