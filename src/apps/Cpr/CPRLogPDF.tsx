@@ -177,43 +177,213 @@ const CPRLogPDFDocument: React.FC<CPRLogPDFProps> = ({ entries, hospital }) => {
     }).replace(',', '');
   };
 
-  const renderTextWithDirections = (text: string, type: LogEntry['type']) => {
-    // For medications, always use LTR
-    if (type === 'medication') {
-      return (
-        <View style={styles.medicationTextContainer}>
-          <Text style={styles.textSegment}>
-            {text}
-          </Text>
-        </View>
-      );
-    }
-
-    // For other types, use the original logic
-    const segments = text.split(/([a-zA-Z]+[/a-zA-Z0-9]*|[0-9/]+)/g);
-    
+/**
+   * Renders text with proper directional handling for mixed Hebrew and English content.
+   * 
+   * The function handles several complex cases:
+   * 1. Pure Hebrew text (RTL)
+   * 2. Pure English/numbers text (LTR)
+   * 3. Mixed content with both Hebrew and English
+   * 4. Punctuation marks:
+   *    - Within same script: kept with the text
+   *    - Between scripts: treated as separate tokens
+   * 5. Proper whitespace preservation between different scripts
+   * 
+   * @param text - The input text to be rendered
+   * @param type - The type of entry ('medication' | 'action' | 'patientDetails')
+   * @returns A View component with properly directed text segments
+   */
+const renderTextWithDirections = (text: string, type: LogEntry['type']) => {
+  // Special case: medications are always LTR
+  if (type === 'medication') {
     return (
-      <View style={{ flexDirection: 'row-reverse', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
-        {segments.map((segment, index) => {
-          const isEnglish = /[a-zA-Z]/.test(segment);
-          return (
-            <Text
-              key={index}
-              style={[
-                styles.textSegment,
-                {
-                  // @ts-ignore
-                  direction: isEnglish ? 'ltr' : 'rtl',
-                }
-              ]}
-            >
-              {segment}
-            </Text>
-          );
-        })}
+      <View style={styles.medicationTextContainer}>
+        <Text style={styles.textSegment}>
+          {text}
+        </Text>
       </View>
     );
-  };
+  }
+
+  /**
+   * Regular expression breakdown:
+   * (\s+) - Captures whitespace sequences
+   * | - OR
+   * ([,.\-_:;()'"]+) - Captures punctuation marks as separate tokens
+   * | - OR
+   * ([a-zA-Z0-9][a-zA-Z0-9\s]*) - Captures English sequences
+   * | - OR
+   * ([־\u0590-\u05FF]+) - Captures Hebrew sequences
+   */
+  const segments = text.split(/(\s+)|([,.\-_:;()'"]+)|([a-zA-Z0-9][a-zA-Z0-9\s]*)|([־\u0590-\u05FF]+)/g)
+    .filter(segment => segment !== '' && segment !== undefined);
+  
+  // Array to hold processed segments with their directional properties
+  const combinedSegments: {
+    text: string;           // The actual text content
+    isEnglish: boolean;     // Whether this segment should be LTR
+    isSpace: boolean;       // Whether this is a whitespace segment
+    isPunctuation: boolean; // Whether this is a punctuation mark
+  }[] = [];
+  
+  let currentEnglishSegment = '';
+  
+  segments.forEach((segment) => {
+    // Handle whitespace segments
+    if (/^\s+$/.test(segment)) {
+      // If we have a pending English segment, push it first
+      if (currentEnglishSegment) {
+        combinedSegments.push({
+          text: currentEnglishSegment.trim(),
+          isEnglish: true,
+          isSpace: false,
+          isPunctuation: false
+        });
+        currentEnglishSegment = '';
+      }
+      
+      // Push the whitespace segment
+      combinedSegments.push({
+        text: ' ',
+        isEnglish: false,
+        isSpace: true,
+        isPunctuation: false
+      });
+      return;
+    }
+
+    // Handle punctuation marks
+    if (/^[,.\-_:;()'"]+$/.test(segment)) {
+      // If we have a pending English segment, push it first
+      if (currentEnglishSegment) {
+        combinedSegments.push({
+          text: currentEnglishSegment.trim(),
+          isEnglish: true,
+          isSpace: false,
+          isPunctuation: false
+        });
+        currentEnglishSegment = '';
+
+        // Add space before punctuation
+        combinedSegments.push({
+          text: ' ',
+          isEnglish: false,
+          isSpace: true,
+          isPunctuation: false
+        });
+      }
+
+      // Push the punctuation mark
+      combinedSegments.push({
+        text: segment,
+        isEnglish: false,
+        isSpace: false,
+        isPunctuation: true
+      });
+
+      // Add space after punctuation
+      combinedSegments.push({
+        text: ' ',
+        isEnglish: false,
+        isSpace: true,
+        isPunctuation: false
+      });
+      return;
+    }
+
+    // Test if the segment is English
+    const isEnglish = /^[a-zA-Z0-9][a-zA-Z0-9\s]*$/.test(segment);
+    
+    if (isEnglish) {
+      // Collect English segments to combine them
+      currentEnglishSegment = currentEnglishSegment 
+        ? `${currentEnglishSegment}${segment}`
+        : segment;
+    } else {
+      // If we have a pending English segment, push it first
+      if (currentEnglishSegment) {
+        combinedSegments.push({
+          text: currentEnglishSegment.trim(),
+          isEnglish: true,
+          isSpace: false,
+          isPunctuation: false
+        });
+        currentEnglishSegment = '';
+        
+        // Add a space between English and Hebrew if not already present
+        if (!combinedSegments[combinedSegments.length - 1]?.isSpace) {
+          combinedSegments.push({
+            text: ' ',
+            isEnglish: false,
+            isSpace: true,
+            isPunctuation: false
+          });
+        }
+      }
+      
+      // Push the Hebrew segment
+      combinedSegments.push({
+        text: segment,
+        isEnglish: false,
+        isSpace: false,
+        isPunctuation: false
+      });
+    }
+  });
+  
+  // Handle any remaining English segment at the end
+  if (currentEnglishSegment) {
+    // Add a space before if the last segment was Hebrew and no space exists
+    if (combinedSegments.length > 0 && 
+        !combinedSegments[combinedSegments.length - 1].isEnglish &&
+        !combinedSegments[combinedSegments.length - 1].isSpace) {
+      combinedSegments.push({
+        text: ' ',
+        isEnglish: false,
+        isSpace: true,
+        isPunctuation: false
+      });
+    }
+    
+    combinedSegments.push({
+      text: currentEnglishSegment.trim(),
+      isEnglish: true,
+      isSpace: false,
+      isPunctuation: false
+    });
+  }
+
+  // Remove duplicate spaces and unnecessary spaces around punctuation
+  const cleanedSegments = combinedSegments.reduce((acc, curr, idx, arr) => {
+    // Skip if this is a space and the next item is also a space
+    if (curr.isSpace && arr[idx + 1]?.isSpace) {
+      return acc;
+    }
+    acc.push(curr);
+    return acc;
+  }, [] as typeof combinedSegments);
+
+  // Render the segments in a right-to-left container
+  return (
+    <View style={{ flexDirection: 'row-reverse', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
+      {cleanedSegments.map((segment, index) => (
+        <Text
+          key={index}
+          style={[
+            styles.textSegment,
+            {
+              // @ts-ignore
+              direction: segment.isEnglish ? 'ltr' : 'rtl',
+            }
+          ]}
+        >
+          {segment.text}
+        </Text>
+      ))}
+    </View>
+  );
+};
+
   const hospitalLogoPath = `../../assets/${hospital}/logo.png`;
   const appLogoPath = '/apps/assets/logo/IconOnly_Transparent_NoBuffer.png';
 

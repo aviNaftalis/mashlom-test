@@ -59,7 +59,7 @@ const Defibrillator: React.FC = () => {
 
     addEntry({
       timestamp: new Date().toISOString(),
-      text: `בוצע ${defiAction.name} - ${getDefi(defiAction.joulePerKg)}`,
+      text: `בוצע ${defiAction.name} - ${getDefi(defiAction.joulePerKg)} J`,
       type: 'action',
       isImportant: true
     });
