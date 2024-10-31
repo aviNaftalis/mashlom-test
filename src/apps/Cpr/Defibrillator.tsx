@@ -65,9 +65,19 @@ const Defibrillator: React.FC = () => {
     });
   };
 
-  // Rest of the component remains the same...
   return (
     <div style={{ marginTop: '15px', marginBottom: '15px' }}>
+      {!weight && (
+        <div style={{ 
+          color: 'red', 
+          textAlign: 'right', 
+          marginBottom: '20px', 
+          direction: 'rtl',
+          fontWeight: 'bold'
+        }}>
+          כדי לצפות בעוצמה הנדרשת, נא הזן את משקל המטופל תחילה.
+        </div>
+      )}
       <table style={{ 
         width: '100%', 
         borderCollapse: 'collapse',
@@ -94,9 +104,11 @@ const Defibrillator: React.FC = () => {
                 padding: '8px', 
                 border: '1px solid #ccc',
               }}>
-                <span style={{ fontWeight: "bold"}}>
-                  {getDefi(defi.joulePerKg)} ({defi.joulePerKg}J/Kg)
-                </span>
+                {weight && (
+                  <span style={{ fontWeight: "bold"}}>
+                    {getDefi(defi.joulePerKg)} ({defi.joulePerKg}J/Kg)
+                  </span>
+                )}
               </td>
               <td style={{ 
                 padding: '8px', 

@@ -174,7 +174,7 @@ const MedicationsTable: React.FC<{
 };
 
 const Medications: React.FC = () => {
-    const { protocol } = useResusContext();
+    const { weight, protocol } = useResusContext();
     const drugsData = drugsDataFile as MedicationGuide;
     const protocols = emergencyProtocols as EmergencyProtocolsData;
   
@@ -230,6 +230,16 @@ const Medications: React.FC = () => {
 
   return (
     <div id="medications-content" className="medications-container">
+      {!weight && (
+        <div style={{ 
+          color: 'red', 
+          marginBottom: '20px', 
+          fontWeight: 'bold',
+          textAlign: 'right'
+        }}>
+          כדי לצפות במינוני התרופות, נא הזן את משקל המטופל תחילה.
+        </div>
+      )}
       <div style={{ marginBottom: '2rem' }}>
         <MedicationsTable 
           title="תרופות החייאה" 

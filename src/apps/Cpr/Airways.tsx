@@ -5,7 +5,6 @@ import { useResusContext } from '../Resus/ResusContext';
 import { loadCurrentState, saveCurrentState } from './CprState/storage';
 import AirwaysRecommendedValues from './AirwaysRecommendedValues';
 import { cprEventEmitter, EVENTS } from './cprEvents';
-
 import './Airways.css';
 
 interface AirwaysData {
@@ -18,13 +17,13 @@ interface AirwaysData {
 }
 
 const initialData: AirwaysData = {
-    airwayType: null,
-    airwaySize: '',
-    hasAmbu: false,
-    hasChestDrain: false,
-    chestDrainSize: '',
-    hasSurgicalAirway: false
-  };
+  airwayType: null,
+  airwaySize: '',
+  hasAmbu: false,
+  hasChestDrain: false,
+  chestDrainSize: '',
+  hasSurgicalAirway: false
+};
 
 interface RecommendedValues {
   blade: number;
@@ -38,12 +37,10 @@ const Airways: React.FC = () => {
   const { age, weight } = useResusContext();
   const [recommendedValues, setRecommendedValues] = useState<RecommendedValues>({} as RecommendedValues);
   const [data, setData] = useState<AirwaysData>(() => {
-    // Initialize state from storage or default values
     const savedState = loadCurrentState();
     return savedState?.airways || initialData;
   });
 
-  // Get recommended values when age changes
   useEffect(() => {
     if (age && airwaysData.dataByAge) {
       const currData = airwaysData.dataByAge.find((data: any) => data.age === age);
@@ -61,7 +58,6 @@ const Airways: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  // Get chest tube size range based on weight
   const getChestTubeSize = (weight: number): string => {
     if (weight < 5) return "8-12";
     if (weight <= 10) return "10-14";
@@ -72,13 +68,11 @@ const Airways: React.FC = () => {
     return "32-40";
   };
 
-  // Calculate average of range (e.g., "8-12" → 10)
   const getAverageFromRange = (range: string): string => {
     const [min, max] = range.split('-').map(Number);
     return String(Math.round((min + max) / 2));
   };
 
-  // Set default size when airway type changes
   const handleAirwayTypeChange = (type: AirwaysData['airwayType']) => {
     let defaultSize = '';
     if (type === 'טובוס') {
@@ -96,7 +90,6 @@ const Airways: React.FC = () => {
     }));
   };
 
-  // Set default chest drain size when checked
   const handleChestDrainChange = (checked: boolean) => {
     let defaultSize = '';
     if (checked && weight) {
@@ -112,10 +105,8 @@ const Airways: React.FC = () => {
   };
 
   const handleConfirm = () => {
-    // Save airways data
     saveCurrentState({ airways: data }, 'airways');
 
-    // Add log entries
     if (data.airwayType) {
       addEntry({
         timestamp: new Date().toISOString(),
@@ -152,7 +143,6 @@ const Airways: React.FC = () => {
       });
     }
 
-    // Close the section
     const toggleButton = document.querySelector('.section-header') as HTMLElement;
     if (toggleButton) {
       toggleButton.click();
@@ -161,10 +151,15 @@ const Airways: React.FC = () => {
 
   return (
     <div className="airways">
-      <AirwaysRecommendedValues />
+    {age && weight ? (
+        <AirwaysRecommendedValues />
+      ) : (
+        <div style={{ color: 'red', textAlign: 'right', marginBottom: '20px', fontWeight: 'bold' }}>
+          על מנת לראות את הערכים המומלצים לגדלים של הצינורות, נא הזן קודם את הגיל והמשקל של המטופל.
+        </div>
+      )}
       
       <form>
-        {/* Airway Type Section */}
         <div className="input-group full-width">
           <label>נתיב אוויר:</label>
           <div className="radio-options">
@@ -212,7 +207,6 @@ const Airways: React.FC = () => {
           </div>
         )}
 
-        {/* Ambu Section */}
         <div className="input-group">
           <label className="checkbox-label">
             <input
@@ -224,7 +218,6 @@ const Airways: React.FC = () => {
           </label>
         </div>
 
-        {/* Chest Drain Section */}
         <div className="input-group full-width">
           <label className="checkbox-label">
             <input
@@ -248,7 +241,6 @@ const Airways: React.FC = () => {
           </div>
         )}
 
-        {/* Surgical Airway Section */}
         <div className="input-group">
           <label className="checkbox-label">
             <input
