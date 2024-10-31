@@ -16,6 +16,12 @@ interface VitalSigns {
   temperature: string;
 }
 
+interface ValidationErrors {
+  heartRate?: string;
+  saturation?: string;
+  temperature?: string;
+}
+
 const initialVitalSigns: VitalSigns = {
   timestamp: '',
   heartRate: '',
@@ -34,15 +40,53 @@ const VitalSigns: React.FC = () => {
   });
   
   const [currentVitalSigns, setCurrentVitalSigns] = useState<VitalSigns>(initialVitalSigns);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
   useEffect(() => {
     const unsubscribe = cprEventEmitter.subscribe(EVENTS.RESET_CPR, () => {
       setVitalSigns([]);
       setCurrentVitalSigns(initialVitalSigns);
+      setValidationErrors({});
     });
 
     return () => unsubscribe();
   }, []);
+
+  const isValidNumber = (value: string): boolean => {
+    // Allow empty string
+    if (!value) return true;
+    
+    // Allow only digits and at most one decimal point
+    // This regex matches:
+    // - Optional digits before decimal point
+    // - Optional decimal point followed by at most one digit
+    return /^\d*\.?\d{0,1}$/.test(value);
+  };
+
+  const validateField = (name: string, value: string): string | undefined => {
+    if (!value) return undefined;
+
+    // First check if it's a valid number format
+    if (!isValidNumber(value)) {
+      return `הזן ערך מספרי תקין`;
+    }
+
+    const numValue = parseFloat(value);
+    
+    // Now check the ranges
+    switch (name) {
+      case 'temperature':
+        if (numValue < 0 || numValue > 50) return `הזן ערך בטווח 0-50`;
+        break;
+      case 'heartRate':
+        if (numValue < 0 || numValue > 220) return `הזן ערך בטווח 0-220`;
+        break;
+      case 'saturation':
+        if (numValue < 0 || numValue > 100) return `הזן ערך בטווח 0-100`;
+        break;
+    }
+    return undefined;
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -51,6 +95,11 @@ const VitalSigns: React.FC = () => {
       setCurrentVitalSigns(prev => ({ ...prev, [name]: formattedValue }));
     } else {
       setCurrentVitalSigns(prev => ({ ...prev, [name]: value }));
+      const error = validateField(name, value);
+      setValidationErrors(prev => ({
+        ...prev,
+        [name]: error
+      }));
     }
   };
 
@@ -77,6 +126,29 @@ const VitalSigns: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if all values are empty
+    const hasAnyValue = Object.values(currentVitalSigns).some(value => 
+      value !== '' && value !== initialVitalSigns.timestamp
+    );
+
+    if (!hasAnyValue) {
+      return; // Don't submit if all fields are empty
+    }
+
+    // Update validation errors but don't prevent submission
+    const errors: ValidationErrors = {};
+    if (currentVitalSigns.temperature) {
+      errors.temperature = validateField('temperature', currentVitalSigns.temperature);
+    }
+    if (currentVitalSigns.heartRate) {
+      errors.heartRate = validateField('heartRate', currentVitalSigns.heartRate);
+    }
+    if (currentVitalSigns.saturation) {
+      errors.saturation = validateField('saturation', currentVitalSigns.saturation);
+    }
+    setValidationErrors(errors);
+
     const newVitalSigns = {
       ...currentVitalSigns,
       timestamp: new Date().toISOString(),
@@ -108,15 +180,8 @@ const VitalSigns: React.FC = () => {
       isImportant: false,
     });
 
-    setCurrentVitalSigns({
-      timestamp: '',
-      heartRate: '',
-      bloodPressure: '',
-      saturation: '',
-      etco2: '',
-      glucose: '',
-      temperature: '',
-    });
+    setCurrentVitalSigns(initialVitalSigns);
+    setValidationErrors({});
   };
 
   const renderVitalSignsHistory = (signs: VitalSigns) => {
@@ -146,13 +211,18 @@ const VitalSigns: React.FC = () => {
       <form onSubmit={handleSubmit}>
         <div className="input-group">
           <label htmlFor="heartRate">דופק (BPM):</label>
-          <input
-            type="text"
-            id="heartRate"
-            name="heartRate"
-            value={currentVitalSigns.heartRate}
-            onChange={handleInputChange}
-          />
+          <div className="input-with-validation">
+            <input
+              type="text"
+              id="heartRate"
+              name="heartRate"
+              value={currentVitalSigns.heartRate}
+              onChange={handleInputChange}
+            />
+            {validationErrors.heartRate && (
+              <div className="validation-error">{validationErrors.heartRate}</div>
+            )}
+          </div>
         </div>
         <div className="input-group">
           <label htmlFor="bloodPressure">לחץ דם:</label>
@@ -166,13 +236,18 @@ const VitalSigns: React.FC = () => {
         </div>
         <div className="input-group">
           <label htmlFor="saturation">סטורציה (%):</label>
-          <input
-            type="text"
-            id="saturation"
-            name="saturation"
-            value={currentVitalSigns.saturation}
-            onChange={handleInputChange}
-          />
+          <div className="input-with-validation">
+            <input
+              type="text"
+              id="saturation"
+              name="saturation"
+              value={currentVitalSigns.saturation}
+              onChange={handleInputChange}
+            />
+            {validationErrors.saturation && (
+              <div className="validation-error">{validationErrors.saturation}</div>
+            )}
+          </div>
         </div>
         <div className="input-group">
           <label htmlFor="etco2">ETCo2:</label>
@@ -196,13 +271,18 @@ const VitalSigns: React.FC = () => {
         </div>
         <div className="input-group">
           <label htmlFor="temperature">חום (°C):</label>
-          <input
-            type="text"
-            id="temperature"
-            name="temperature"
-            value={currentVitalSigns.temperature}
-            onChange={handleInputChange}
-          />
+          <div className="input-with-validation">
+            <input
+              type="text"
+              id="temperature"
+              name="temperature"
+              value={currentVitalSigns.temperature}
+              onChange={handleInputChange}
+            />
+            {validationErrors.temperature && (
+              <div className="validation-error">{validationErrors.temperature}</div>
+            )}
+          </div>
         </div>
         <div className="button-container">
           <button type="submit">
@@ -212,7 +292,7 @@ const VitalSigns: React.FC = () => {
       </form>
       {vitalSigns.length > 0 && <div className="vital-signs-history">
         <h4>היסטוריית מדדים</h4>
-        {vitalSigns.map((signs) => renderVitalSignsHistory(signs))}
+        {[...vitalSigns].reverse().map((signs) => renderVitalSignsHistory(signs))}
       </div>}
     </div>
   );
