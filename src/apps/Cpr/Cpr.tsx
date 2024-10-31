@@ -106,7 +106,7 @@ const CprContent: React.FC = () => {
       }
     }, 'resusContext');
 
-    if (age && weight !== null) {
+    if (age && weight) {
       addEntry({
         timestamp: new Date().toISOString(),
         text: `מטופל בגיל ${getFormattedAge(age)}, במשקל ${weight} ק"ג`,

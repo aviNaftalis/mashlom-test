@@ -48,18 +48,19 @@ export const CPRLogProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const addEntry = (entry: Omit<LogEntry, 'id'>) => {
     const newEntry = { ...entry, id: Date.now().toString() };
-    const newLog = {
-      ...log,
-      entries: [...log.entries, newEntry]
-    };
-    
-    // Update local state
-    setLog(newLog);
-    
-    // Save to storage
-    saveCurrentState({
-      log: newLog
-    }, 'log');
+    setLog(prevLog => {
+      const newLog = {
+        ...prevLog,
+        entries: [...prevLog.entries, newEntry]
+      };
+      
+      // Save to storage inside the callback
+      saveCurrentState({
+        log: newLog
+      }, 'log');
+      
+      return newLog;
+    });
   };
 
   const updateEntry = (id: string, updatedEntry: Partial<LogEntry>) => {
