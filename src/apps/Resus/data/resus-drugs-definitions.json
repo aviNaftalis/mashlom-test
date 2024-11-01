@@ -366,7 +366,8 @@
       "dose_per_kg": 0.5,
       "dose_unit": "mg",
       "dose_range": "mg/kg(0.5-1)",
-      "concentration": "1/1"
+      "concentration": "",
+      "type": "mass"
     },
     {
       "id": "Tazocin_IV_110_mg",
@@ -376,7 +377,8 @@
       "dose_unit": "mg",
       "maxDose": "4500",
       "maxDoseUnit": "mg",
-      "concentration": "1/1",
+      "concentration": "",
+      "type": "mass",
       "comment": "up to 4 doses per day"
     },
     {
@@ -388,7 +390,8 @@
       "maxDose": "1500",
       "maxDoseUnit": "mg",
       "dose_range": "mg/kg(15-20)",
-      "concentration": "1/1",
+      "concentration": "",
+      "type": "mass",
       "comment": "up to 1 dose per day"
     },
     {
@@ -399,7 +402,8 @@
       "dose_unit": "mg",
       "maxDose": "2000",
       "maxDoseUnit": "mg",
-      "concentration": "1/1",
+      "concentration": "",
+      "type": "mass",
       "comment": "up to 3 doses per day"
     },
     {
@@ -410,7 +414,8 @@
       "dose_unit": "mg",
       "maxDose": "500",
       "maxDoseUnit": "mg",
-      "concentration": "1/1",
+      "concentration": "",
+      "type": "mass",
       "dose_range": "mg/kg(15-20)"
     },
     {
@@ -441,7 +446,8 @@
       "dose_unit": "mg",
       "maxDose": "10",
       "maxDoseUnit": "mg",
-      "concentration": "1/1"
+      "type": "mass",
+      "concentration": ""
     },
     {
       "id": "Dexamethasone_IV_0.6_mg",
